@@ -7,6 +7,9 @@ import { createClient } from "@supabase/supabase-js";
 import { ProductList } from "./admin/ProductList";
 import { ProductEdit } from "./admin/ProductEdit";
 import { ProductCreate } from "./admin/ProductCreate";
+import { OrganizationList } from "./admin/OrganizationList";
+import { OrganizationEdit } from "./admin/OrganizationEdit";
+import { OrganizationCreate } from "./admin/OrganizationCreate";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
@@ -185,6 +188,12 @@ export default function AdminApp() {
           list={ProductList}
           edit={ProductEdit}
           create={ProductCreate}
+        />
+        <Resource
+          name="organizations"
+          list={OrganizationList}
+          edit={OrganizationEdit}
+          create={OrganizationCreate}
         />
       </Admin>
     </BrowserRouter>

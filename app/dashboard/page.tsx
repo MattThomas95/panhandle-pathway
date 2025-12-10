@@ -76,6 +76,14 @@ export default function DashboardPage() {
             <span className="text-sm text-zinc-600 dark:text-zinc-400">
               {user?.email}
             </span>
+            {profile?.is_org_admin && (
+              <Link
+                href="/org"
+                className="rounded-md bg-blue-100 px-3 py-1.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
+              >
+                Org Portal
+              </Link>
+            )}
             {profile?.role === "admin" && (
               <Link
                 href="/admin"
