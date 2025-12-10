@@ -69,25 +69,25 @@ email_logs
 
 #### Steps:
 1. **Set up Supabase Auth**
-   - [ ] Create migration for `organizations` table
-   - [ ] Create migration for `profiles` table (extends auth.users)
-   - [ ] Set up Row Level Security (RLS) policies
+   - [X] Create migration for `organizations` table
+   - [X] Create migration for `profiles` table (extends auth.users)
+   - [X] Set up Row Level Security (RLS) policies
 
 2. **Build Auth UI**
-   - [ ] Create `/auth/login` page
-   - [ ] Create `/auth/signup` page
-   - [ ] Create `/auth/forgot-password` page
-   - [ ] Add auth middleware for protected routes
+   - [x] Create `/auth/login` page
+   - [x] Create `/auth/signup` page
+   - [x] Create `/auth/forgot-password` page
+   - [x] Add auth middleware for protected routes
 
 3. **Organization Management**
-   - [ ] Create organization signup flow
-   - [ ] Build organization dashboard for managing child accounts
-   - [ ] Add invite system for adding users to organization
+   - [x] Create organization signup flow
+   - [x] Build organization dashboard for managing child accounts
+   - [x] Add invite system for adding users to organization
 
 4. **Admin Panel Setup**
-   - [ ] Configure React Admin with Supabase auth
-   - [ ] Add Users resource to admin
-   - [ ] Add Organizations resource to admin
+   - [x] Configure React Admin with Supabase auth
+   - [x] Add Users resource to admin
+   - [x] Add Organizations resource to admin
 
 ---
 
@@ -96,26 +96,26 @@ email_logs
 
 #### Steps:
 1. **Database Setup**
-   - [ ] Create migration for `services` table
-   - [ ] Create migration for `time_slots` table
-   - [ ] Create migration for `bookings` table
-   - [ ] Set up RLS policies for bookings
+   - [x] Create migration for `services` table
+   - [x] Create migration for `time_slots` table
+   - [x] Create migration for `bookings` table
+   - [x] Set up RLS policies for bookings
 
 2. **Admin: Service Management**
-   - [ ] Add Services resource to React Admin
-   - [ ] Build time slot generator (recurring slots)
-   - [ ] Add capacity management
+   - [x] Add Services resource to React Admin
+   - [x] Build time slot generator (recurring slots)
+   - [x] Add capacity management
 
 3. **Public Booking Interface**
-   - [ ] Create `/book` page with calendar view
-   - [ ] Implement service selection
-   - [ ] Show available slots (hide/disable full slots)
-   - [ ] Build booking confirmation flow
+   - [x] Create `/book` page with calendar view
+   - [x] Implement service selection
+   - [x] Show available slots (hide/disable full slots)
+   - [x] Build booking confirmation flow
 
 4. **User Dashboard**
-   - [ ] Create `/dashboard` for logged-in users
-   - [ ] Show upcoming bookings
-   - [ ] Allow booking cancellation
+   - [x] Create `/dashboard` for logged-in users
+   - [x] Show upcoming bookings
+   - [x] Allow booking cancellation
 
 ---
 

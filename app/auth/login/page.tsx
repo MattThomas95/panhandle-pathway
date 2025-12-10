@@ -1,17 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -22,19 +18,89 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Request timeout - please check your connection")), 10000)
+      );
 
-    if (error) {
-      setError(error.message);
+      const loginPromise = supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      const { data, error } = await Promise.race([loginPromise, timeoutPromise]) as any;
+
+      if (error) {
+        setError(error.message);
+        setLoading(false);
+        return;
+      }
+
+      if (!data?.user) {
+        setError("Login failed. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      console.log("Login successful, user:", data.user.id);
+
+      // Fetch user profile to determine redirect
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role, is_org_admin, organization_id")
+        .eq("id", data.user.id)
+        .single();
+
+      if (profileError) {
+        console.error("Error fetching profile:", profileError);
+        // Default to dashboard if profile fetch fails
+        setLoading(false);
+        router.push("/dashboard");
+        return;
+      }
+
+      console.log("Profile fetched:", profile);
+
+      // Determine redirect based on role and organization
+      let redirectTo: string;
+
+      // Check if there's a specific redirect requested
+      const requestedRedirect = searchParams.get("redirectedFrom");
+
+      if (requestedRedirect) {
+        // If they were trying to access a specific page, send them there
+        redirectTo = requestedRedirect;
+      } else {
+        // Otherwise, redirect based on role
+        if (profile.role === "admin") {
+          // System admins go to admin panel
+          redirectTo = "/admin";
+        } else if (profile.is_org_admin && profile.organization_id) {
+          // Organization admins go to org portal
+          redirectTo = "/org";
+        } else {
+          // Regular users go to dashboard
+          redirectTo = "/dashboard";
+        }
+      }
+
+      console.log("Redirecting to:", redirectTo);
+      console.log("Waiting 2 seconds before redirect to allow session to persist...");
+
+      // Wait a moment to ensure session is fully persisted to localStorage
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      console.log("Now redirecting...");
+
+      // Use window.location.href instead of router.push to ensure cookies are sent
+      // This forces a full page reload which includes the session cookies
+      window.location.href = redirectTo;
+    } catch (err: any) {
+      console.error("Login error:", err);
+      setError(err.message || "An error occurred during login");
       setLoading(false);
-      return;
     }
-
-    // Redirect to dashboard on success
-    router.push("/dashboard");
   };
 
   return (

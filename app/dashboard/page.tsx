@@ -1,20 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/auth-helpers-nextjs";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<any>(null);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -35,6 +36,22 @@ export default function DashboardPage() {
         .single();
 
       setProfile(profileData);
+
+      // Fetch upcoming bookings
+      const { data: bookingsData } = await supabase
+        .from("bookings")
+        .select(`
+          *,
+          services (name),
+          time_slots (start_time, end_time)
+        `)
+        .eq("user_id", session.user.id)
+        .in("status", ["confirmed", "pending"])
+        .gte("time_slots.start_time", new Date().toISOString())
+        .order("time_slots(start_time)", { ascending: true })
+        .limit(5);
+
+      setBookings(bookingsData || []);
       setLoading(false);
     };
 
@@ -55,6 +72,53 @@ export default function DashboardPage() {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push("/");
+  };
+
+  const fetchBookings = async () => {
+    if (!user) return;
+
+    const { data: bookingsData } = await supabase
+      .from("bookings")
+      .select(`
+        *,
+        services (name),
+        time_slots (start_time, end_time)
+      `)
+      .eq("user_id", user.id)
+      .in("status", ["confirmed", "pending"])
+      .gte("time_slots.start_time", new Date().toISOString())
+      .order("time_slots(start_time)", { ascending: true })
+      .limit(5);
+
+    setBookings(bookingsData || []);
+  };
+
+  const handleCancelClick = (booking: any) => {
+    setSelectedBooking(booking);
+    setShowCancelModal(true);
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!selectedBooking) return;
+
+    setCancellingId(selectedBooking.id);
+
+    const { error } = await supabase
+      .from("bookings")
+      .update({ status: "cancelled" })
+      .eq("id", selectedBooking.id);
+
+    if (error) {
+      console.error("Error cancelling booking:", error);
+      alert("Failed to cancel booking. Please try again.");
+    } else {
+      // Refresh bookings
+      await fetchBookings();
+    }
+
+    setCancellingId(null);
+    setShowCancelModal(false);
+    setSelectedBooking(null);
   };
 
   if (loading) {
@@ -153,17 +217,110 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Upcoming Bookings Placeholder */}
+          {/* Upcoming Bookings */}
           <div className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
             <h2 className="text-lg font-semibold text-black dark:text-white">
               Upcoming Bookings
             </h2>
-            <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
-              No upcoming bookings.
-            </p>
+            {bookings.length === 0 ? (
+              <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
+                No upcoming bookings.
+              </p>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {bookings.map((booking: any) => (
+                  <div
+                    key={booking.id}
+                    className="rounded-md border border-zinc-200 p-3 dark:border-zinc-700"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="font-medium text-black dark:text-white">
+                          {booking.services?.name}
+                        </p>
+                        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                          {new Date(booking.time_slots?.start_time).toLocaleDateString()} at{" "}
+                          {new Date(booking.time_slots?.start_time).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                        <span
+                          className={`mt-2 inline-block rounded-full px-2 py-1 text-xs font-medium ${
+                            booking.status === "confirmed"
+                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                              : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                          }`}
+                        >
+                          {booking.status}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => handleCancelClick(booking)}
+                        disabled={cancellingId === booking.id}
+                        className="ml-2 rounded-md px-2 py-1 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </main>
+
+      {/* Cancel Confirmation Modal */}
+      {showCancelModal && selectedBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-lg border border-zinc-200 bg-white p-6 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
+            <h3 className="text-lg font-semibold text-black dark:text-white">
+              Cancel Booking?
+            </h3>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+              Are you sure you want to cancel your booking for{" "}
+              <strong className="text-black dark:text-white">
+                {selectedBooking.services?.name}
+              </strong>{" "}
+              on{" "}
+              <strong className="text-black dark:text-white">
+                {new Date(selectedBooking.time_slots?.start_time).toLocaleDateString()}
+              </strong>{" "}
+              at{" "}
+              <strong className="text-black dark:text-white">
+                {new Date(selectedBooking.time_slots?.start_time).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </strong>
+              ?
+            </p>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+              This action cannot be undone.
+            </p>
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setSelectedBooking(null);
+                }}
+                disabled={cancellingId !== null}
+                className="flex-1 rounded-md border border-zinc-300 bg-white py-2 text-black transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
+              >
+                Keep Booking
+              </button>
+              <button
+                onClick={handleCancelConfirm}
+                disabled={cancellingId !== null}
+                className="flex-1 rounded-md bg-red-600 py-2 text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {cancellingId ? "Cancelling..." : "Yes, Cancel"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

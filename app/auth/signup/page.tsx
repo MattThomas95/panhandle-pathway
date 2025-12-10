@@ -1,14 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/auth-helpers-nextjs";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
 export default function SignupPage() {
   const router = useRouter();
@@ -206,6 +203,18 @@ export default function SignupPage() {
             Sign in
           </Link>
         </p>
+
+        <div className="mt-4 rounded-md bg-blue-50 p-3 dark:bg-blue-900/20">
+          <p className="text-center text-sm text-blue-600 dark:text-blue-400">
+            Want to create an organization?{" "}
+            <Link
+              href="/auth/create-organization"
+              className="font-medium underline hover:no-underline"
+            >
+              Click here
+            </Link>
+          </p>
+        </div>
 
         <div className="mt-6 border-t border-zinc-200 pt-4 dark:border-zinc-700">
           <Link
