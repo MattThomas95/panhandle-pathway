@@ -98,6 +98,21 @@ const createDataProvider = (client: any) => {
     },
 
     create: async (resource: string, params: any) => {
+      console.log(`Creating ${resource}`, params.data);
+
+      // Get authenticated user from JWT token
+      const { data: { user }, error: userError } = await client.auth.getUser();
+      console.log('CREATE DIAGNOSTIC:', {
+        hasUser: !!user,
+        userId: user?.id,
+        userEmail: user?.email,
+        userError: userError?.message
+      });
+
+      if (!user) {
+        throw new Error('Not authenticated - no user found');
+      }
+
       // Special handling for profiles - create auth user first
       if (resource === "profiles") {
         const { email, password, full_name, role, is_org_admin, organization_id } = params.data;
@@ -133,14 +148,86 @@ const createDataProvider = (client: any) => {
         return { data };
       }
 
-      // Default create
+      // DIAGNOSTIC: Test direct fetch to see if it's an RLS or client issue
+      const { data: { session: testSession } } = await client.auth.getSession();
+
+      // Decode JWT to see what role it has
+      let jwtPayload = null;
+      if (testSession?.access_token) {
+        try {
+          const parts = testSession.access_token.split('.');
+          jwtPayload = JSON.parse(atob(parts[1]));
+          console.log('JWT Payload:', {
+            role: jwtPayload.role,
+            sub: jwtPayload.sub,
+            email: jwtPayload.email,
+            exp: new Date(jwtPayload.exp * 1000),
+            aud: jwtPayload.aud
+          });
+        } catch (e) {
+          console.error('Failed to decode JWT:', e);
+        }
+      }
+
+      console.log('About to insert - session check:', {
+        hasSession: !!testSession,
+        hasToken: !!testSession?.access_token,
+        tokenStart: testSession?.access_token?.substring(0, 30),
+        jwtRole: jwtPayload?.role
+      });
+
+      // Try manual fetch to verify the token is sent correctly
+      try {
+        const manualUrl = `${supabaseUrl}/rest/v1/${resource}`;
+        console.log('Trying manual fetch to:', manualUrl);
+
+        const manualResponse = await fetch(manualUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${testSession?.access_token}`,
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify(params.data)
+        });
+
+        console.log('Manual fetch response:', {
+          status: manualResponse.status,
+          ok: manualResponse.ok
+        });
+
+        if (manualResponse.ok) {
+          const manualData = await manualResponse.json();
+          console.log('Manual fetch SUCCESS!', manualData);
+          return { data: Array.isArray(manualData) ? manualData[0] : manualData };
+        } else {
+          const manualError = await manualResponse.json();
+          console.error('Manual fetch FAILED:', manualError);
+        }
+      } catch (fetchError) {
+        console.error('Manual fetch exception:', fetchError);
+      }
+
+      // Also try with Supabase client
       const { data, error } = await client
         .from(resource)
         .insert(params.data)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error(`Create ${resource} error:`, error);
+        console.error('Error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+        throw error;
+      }
+
+      console.log(`Create ${resource} success:`, data);
       return { data };
     },
 
@@ -255,43 +342,37 @@ export default function AdminApp() {
   const [dataProvider, setDataProvider] = useState<any>(null);
 
   useEffect(() => {
-    // Sync session from SSR client (cookies) to create authenticated client
-    const syncSession = async () => {
+    // Transfer session from SSR client to JS client for proper Authorization headers
+    const initDataProvider = async () => {
       const { data: { session } } = await supabaseClient.auth.getSession();
-      console.log('Syncing session:', { hasSession: !!session, accessToken: session?.access_token?.substring(0, 20) + '...' });
+      console.log('Initializing data provider:', {
+        hasSession: !!session,
+        accessToken: session?.access_token ? 'present' : 'missing',
+        userId: session?.user?.id
+      });
 
       if (session) {
-        // Create a FRESH Supabase client with the session
-        const { createClient } = await import('@supabase/supabase-js');
-        const authenticatedClient = createClient(supabaseUrl, supabaseKey, {
-          auth: {
-            persistSession: true,
-            autoRefreshToken: true,
-          },
-          global: {
-            headers: {
-              Authorization: `Bearer ${session.access_token}`,
-            },
-          },
-        });
-
-        // Set the session on this fresh client
-        await authenticatedClient.auth.setSession({
+        // Transfer session to JS client which properly sends Authorization headers
+        await supabaseJsClient.auth.setSession({
           access_token: session.access_token,
           refresh_token: session.refresh_token,
         });
-        console.log('Fresh authenticated client created with JWT token');
 
-        // Create data provider with the authenticated client
-        setDataProvider(createDataProvider(authenticatedClient));
+        // Verify the JS client has the user
+        const { data: { user } } = await supabaseJsClient.auth.getUser();
+        console.log('JS client user verified:', { hasUser: !!user, userId: user?.id });
+
+        // Use JS client for data provider - it sends proper Authorization headers
+        setDataProvider(createDataProvider(supabaseJsClient));
+        console.log('Data provider initialized with JS client');
       } else {
-        console.error('No session found!');
+        console.error('No session found in cookies!');
       }
 
       setIsClient(true);
     };
 
-    syncSession();
+    initDataProvider();
   }, []);
 
   if (!isClient || !dataProvider) return null;
