@@ -10,10 +10,53 @@ import {
   ImageField,
   EditButton,
   DeleteButton,
+  Filter,
+  TextInput,
+  BooleanInput,
+  TopToolbar,
 } from "react-admin";
+import { useExportCSV } from "./useExportCSV";
+
+// Export button component
+const ProductListActions = () => {
+  const { exportToCSV } = useExportCSV();
+
+  return (
+    <TopToolbar>
+      <button
+        onClick={() =>
+          exportToCSV({
+            resourceName: "products",
+            filename: "products",
+            fields: ["id", "name", "price", "inventory", "is_active", "created_at"],
+          })
+        }
+        style={{
+          padding: "8px 16px",
+          background: "#1976d2",
+          color: "white",
+          border: "none",
+          borderRadius: 4,
+          cursor: "pointer",
+          marginRight: "0.5rem",
+        }}
+      >
+        📥 Export CSV
+      </button>
+    </TopToolbar>
+  );
+};
+
+// Filter component
+const ProductFilter = () => (
+  <Filter>
+    <TextInput source="name" label="Product Name" alwaysOn />
+    <BooleanInput source="is_active" label="Active Only" />
+  </Filter>
+);
 
 export const ProductList = () => (
-  <List>
+  <List sort={{ field: "name", order: "ASC" }} filters={<ProductFilter />} actions={<ProductListActions />}>
     <Datagrid rowClick="edit">
       <ImageField source="image_url" label="Image" />
       <TextField source="name" />

@@ -8,10 +8,71 @@ import {
   DeleteButton,
   BooleanField,
   ReferenceField,
+  Filter,
+  TextInput,
+  SelectInput,
+  BooleanInput,
+  ReferenceInput,
+  TopToolbar,
 } from "react-admin";
+import { useExportCSV } from "./useExportCSV";
+
+// Export button component
+const ProfileListActions = () => {
+  const { exportToCSV } = useExportCSV();
+
+  return (
+    <TopToolbar>
+      <button
+        onClick={() =>
+          exportToCSV({
+            resourceName: "profiles",
+            filename: "profiles",
+            fields: ["id", "email", "full_name", "role", "is_org_admin", "organization_id", "created_at"],
+            referenceFields: {
+              organization_id: { resource: "organizations", displayField: "name" },
+            },
+          })
+        }
+        style={{
+          padding: "8px 16px",
+          background: "#1976d2",
+          color: "white",
+          border: "none",
+          borderRadius: 4,
+          cursor: "pointer",
+          marginRight: "0.5rem",
+        }}
+      >
+        📥 Export CSV
+      </button>
+    </TopToolbar>
+  );
+};
+
+// Filter component
+const ProfileFilter = () => (
+  <Filter>
+    <TextInput source="email" label="Email" alwaysOn />
+    <TextInput source="full_name" label="Name" />
+    <SelectInput
+      source="role"
+      label="Role"
+      choices={[
+        { id: "user", name: "User" },
+        { id: "admin", name: "Admin" },
+        { id: "staff", name: "Staff" },
+      ]}
+    />
+    <BooleanInput source="is_org_admin" label="Org Admin" />
+    <ReferenceInput source="organization_id" reference="organizations" label="Organization">
+      <SelectInput optionText="name" />
+    </ReferenceInput>
+  </Filter>
+);
 
 export const ProfileList = () => (
-  <List>
+  <List sort={{ field: "email", order: "ASC" }} filters={<ProfileFilter />} actions={<ProfileListActions />}>
     <Datagrid>
       <EmailField source="email" />
       <TextField source="full_name" label="Name" />

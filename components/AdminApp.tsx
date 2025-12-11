@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Admin, Resource } from "react-admin";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { supabase as supabaseClient, supabaseJsClient } from "@/lib/supabase";
+import { Dashboard } from "./admin/Dashboard";
+import { RevenuePage } from "./admin/RevenuePage";
 import { ProductList } from "./admin/ProductList";
 import { ProductEdit } from "./admin/ProductEdit";
 import { ProductCreate } from "./admin/ProductCreate";
@@ -18,6 +20,9 @@ import { ServiceEdit } from "./admin/ServiceEdit";
 import { ServiceCreate } from "./admin/ServiceCreate";
 import { BookingList } from "./admin/BookingList";
 import { BookingEdit } from "./admin/BookingEdit";
+import { TimeSlotList } from "./admin/TimeSlotList";
+import { TimeSlotEdit } from "./admin/TimeSlotEdit";
+import { TimeSlotCreate } from "./admin/TimeSlotCreate";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
@@ -384,38 +389,55 @@ export default function AdminApp() {
         authProvider={authProvider}
         loginPage={false}
         requireAuth
+        dashboard={Dashboard}
       >
-        <Resource
-          name="profiles"
-          list={ProfileList}
-          edit={ProfileEdit}
-          create={ProfileCreate}
-          options={{ label: "Users" }}
-        />
-        <Resource
-          name="organizations"
-          list={OrganizationList}
-          edit={OrganizationEdit}
-          create={OrganizationCreate}
-        />
-        <Resource
-          name="products"
-          list={ProductList}
-          edit={ProductEdit}
-          create={ProductCreate}
-        />
-        <Resource
-          name="services"
-          list={ServiceList}
-          edit={ServiceEdit}
-          create={ServiceCreate}
-        />
-        <Resource
-          name="bookings"
-          list={BookingList}
-          edit={BookingEdit}
-        />
-        <Resource name="time_slots" />
+        <Routes>
+          <Route path="/revenue" element={<RevenuePage />} />
+          <Route
+            path="/"
+            element={
+              <>
+                <Resource
+                  name="profiles"
+                  list={ProfileList}
+                  edit={ProfileEdit}
+                  create={ProfileCreate}
+                  options={{ label: "Users" }}
+                />
+                <Resource
+                  name="organizations"
+                  list={OrganizationList}
+                  edit={OrganizationEdit}
+                  create={OrganizationCreate}
+                />
+                <Resource
+                  name="products"
+                  list={ProductList}
+                  edit={ProductEdit}
+                  create={ProductCreate}
+                />
+                <Resource
+                  name="services"
+                  list={ServiceList}
+                  edit={ServiceEdit}
+                  create={ServiceCreate}
+                />
+                <Resource
+                  name="bookings"
+                  list={BookingList}
+                  edit={BookingEdit}
+                />
+                <Resource
+                  name="time_slots"
+                  list={TimeSlotList}
+                  edit={TimeSlotEdit}
+                  create={TimeSlotCreate}
+                  options={{ label: "Time Slots" }}
+                />
+              </>
+            }
+          />
+        </Routes>
       </Admin>
     </BrowserRouter>
   );

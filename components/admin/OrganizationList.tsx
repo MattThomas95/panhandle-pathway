@@ -6,10 +6,52 @@ import {
   EmailField,
   EditButton,
   DeleteButton,
+  Filter,
+  TextInput,
+  TopToolbar,
 } from "react-admin";
+import { useExportCSV } from "./useExportCSV";
+
+// Export button component
+const OrganizationListActions = () => {
+  const { exportToCSV } = useExportCSV();
+
+  return (
+    <TopToolbar>
+      <button
+        onClick={() =>
+          exportToCSV({
+            resourceName: "organizations",
+            filename: "organizations",
+            fields: ["id", "name", "slug", "email", "phone", "created_at"],
+          })
+        }
+        style={{
+          padding: "8px 16px",
+          background: "#1976d2",
+          color: "white",
+          border: "none",
+          borderRadius: 4,
+          cursor: "pointer",
+          marginRight: "0.5rem",
+        }}
+      >
+        📥 Export CSV
+      </button>
+    </TopToolbar>
+  );
+};
+
+// Filter component
+const OrganizationFilter = () => (
+  <Filter>
+    <TextInput source="name" label="Organization Name" alwaysOn />
+    <TextInput source="email" label="Email" />
+  </Filter>
+);
 
 export const OrganizationList = () => (
-  <List>
+  <List sort={{ field: "name", order: "ASC" }} filters={<OrganizationFilter />} actions={<OrganizationListActions />}>
     <Datagrid>
       <TextField source="name" />
       <TextField source="slug" />
