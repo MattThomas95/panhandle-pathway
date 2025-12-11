@@ -88,6 +88,8 @@ email_logs
    - [x] Configure React Admin with Supabase auth
    - [x] Add Users resource to admin
    - [x] Add Organizations resource to admin
+   - [x] Fix React Admin authentication with session transfer
+   - [x] Configure proper RLS policies and PostgreSQL GRANT permissions
 
 ---
 
@@ -103,8 +105,9 @@ email_logs
 
 2. **Admin: Service Management**
    - [x] Add Services resource to React Admin
-   - [x] Build time slot generator (recurring slots)
-   - [x] Add capacity management
+   - [x] Add Bookings resource to React Admin
+   - [ ] Build time slot generator (recurring slots)
+   - [ ] Add capacity management
 
 3. **Public Booking Interface**
    - [x] Create `/book` page with calendar view
@@ -124,7 +127,7 @@ email_logs
 
 #### Steps:
 1. **Database Setup**
-   - [ ] Create migration for `products` table
+   - [x] Create migration for `products` table
    - [ ] Create migration for `orders` table
    - [ ] Create migration for `order_items` table
    - [ ] Set up RLS policies
@@ -141,7 +144,7 @@ email_logs
    - [ ] Create checkout flow
 
 4. **Admin: Product Management**
-   - [ ] Add Products resource to React Admin
+   - [x] Add Products resource to React Admin
    - [ ] Add Orders resource to React Admin
    - [ ] Add inventory tracking
 
@@ -285,3 +288,53 @@ panhandle-pathway/
 - **Stripe** handles PCI compliance for payments
 - **Edge Functions** can handle email sending without a separate backend
 - Consider adding **Supabase Realtime** for live calendar updates if needed
+
+---
+
+## Recent Fixes & Solutions
+
+### React Admin Authentication Fix (Completed)
+
+**Problem:** React Admin was getting 403 Forbidden errors when trying to create records (services, bookings, etc.) despite being authenticated.
+
+**Root Cause:** Two separate issues:
+1. Session was stored in cookies (SSR client) but React Admin needed localStorage-based client for proper Authorization headers
+2. PostgreSQL table-level GRANT permissions were missing for the `authenticated` role (separate from RLS policies)
+
+**Solution:**
+1. **Dual Client Setup** ([lib/supabase.ts](lib/supabase.ts)):
+   - `supabase` - SSR client using `@supabase/ssr` (cookies-based)
+   - `supabaseJsClient` - JS client using `@supabase/supabase-js` (localStorage-based)
+
+2. **Session Transfer** ([components/AdminApp.tsx](components/AdminApp.tsx:152-165)):
+   ```typescript
+   // Transfer session from SSR client to JS client
+   const { data: { session } } = await supabaseClient.auth.getSession();
+   await supabaseJsClient.auth.setSession({
+     access_token: session.access_token,
+     refresh_token: session.refresh_token,
+   });
+   ```
+
+3. **PostgreSQL GRANT Permissions** (run in Supabase SQL Editor):
+   ```sql
+   GRANT ALL ON services TO authenticated;
+   GRANT ALL ON bookings TO authenticated;
+   GRANT ALL ON time_slots TO authenticated;
+   GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+   ```
+
+4. **Proper RLS Policies** ([setup-rls-proper.sql](setup-rls-proper.sql)):
+   - Separate policies for each operation (SELECT, INSERT, UPDATE, DELETE)
+   - All policies target the `authenticated` role with `USING (true)` and `WITH CHECK (true)`
+
+**Key Learnings:**
+- Supabase RLS requires **both** PostgreSQL GRANT permissions AND RLS policies
+- `@supabase/ssr` client doesn't send Authorization headers in REST API calls (by design for security)
+- React Admin needs explicit Authorization headers, so use `@supabase/supabase-js` client
+- Session can be transferred between clients using `setSession()`
+
+**Files Modified:**
+- [components/AdminApp.tsx](components/AdminApp.tsx) - Session transfer and data provider
+- [lib/supabase.ts](lib/supabase.ts) - Dual client setup
+- [setup-rls-proper.sql](setup-rls-proper.sql) - Working RLS policies
