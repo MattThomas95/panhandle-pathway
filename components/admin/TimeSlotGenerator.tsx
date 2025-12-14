@@ -17,6 +17,7 @@ type GeneratedSlot = {
 type Props = {
   serviceId?: string;
   defaultCapacity?: number;
+  isMultiDay?: boolean;
   onGenerate?: (slots: GeneratedSlot[]) => void;
 };
 
@@ -41,7 +42,55 @@ function addMinutesToDate(d: Date, minutes: number) {
   return new Date(d.getTime() + minutes * 60 * 1000);
 }
 
-export default function TimeSlotGenerator({ serviceId, defaultCapacity = 1, onGenerate }: Props) {
+// Group consecutive days of the week (e.g., [5,6,0] -> [[5,6,0]] for Fri-Sat-Sun)
+function groupConsecutiveDays(days: number[]): number[][] {
+  if (days.length === 0) return [];
+  if (days.length === 1) return [days];
+
+  // Handle wrap-around: if we have both Sunday (0) and Saturday (6), treat them as consecutive
+  const hasSunday = days.includes(0);
+  const hasSaturday = days.includes(6);
+
+  // If we have Saturday and Sunday, move Sunday to after Saturday for grouping
+  let workingDays = [...days];
+  if (hasSunday && hasSaturday) {
+    // Remove Sunday from the array and we'll add it back at the end if needed
+    workingDays = workingDays.filter(d => d !== 0);
+    workingDays.sort((a, b) => a - b);
+
+    // Check if Saturday is at the end of a consecutive sequence
+    const saturdayIndex = workingDays.indexOf(6);
+    if (saturdayIndex !== -1) {
+      // Insert Sunday right after Saturday
+      workingDays.splice(saturdayIndex + 1, 0, 0);
+    } else {
+      workingDays.push(0);
+    }
+  } else {
+    workingDays.sort((a, b) => a - b);
+  }
+
+  const groups: number[][] = [];
+  let currentGroup = [workingDays[0]];
+
+  for (let i = 1; i < workingDays.length; i++) {
+    const prev = workingDays[i - 1];
+    const curr = workingDays[i];
+
+    // Check if consecutive (including wrap-around from Saturday (6) to Sunday (0))
+    if (curr === prev + 1 || (prev === 6 && curr === 0)) {
+      currentGroup.push(curr);
+    } else {
+      groups.push(currentGroup);
+      currentGroup = [curr];
+    }
+  }
+  groups.push(currentGroup);
+
+  return groups;
+}
+
+export default function TimeSlotGenerator({ serviceId, defaultCapacity = 1, isMultiDay = false, onGenerate }: Props) {
   const dataProvider = useDataProvider();
   const notify = useNotify();
   const refresh = useRefresh();
@@ -94,28 +143,78 @@ export default function TimeSlotGenerator({ serviceId, defaultCapacity = 1, onGe
     const eDate = new Date(endDate + "T23:59:59");
 
     const slots: GeneratedSlot[] = [];
-    for (let d = new Date(sDate); d <= eDate; d.setDate(d.getDate() + 1)) {
-      const dow = d.getDay();
-      if (!selectedDays.includes(dow)) continue;
 
-      const dayRange = dayRanges[dow];
-      const startMinutes = parseTimeToMinutes(dayRange.startTime);
-      const endMinutes = parseTimeToMinutes(dayRange.endTime);
+    if (isMultiDay) {
+      // Group consecutive days (e.g., Fri-Sat-Sun)
+      const dayGroups = groupConsecutiveDays(selectedDays);
 
-      if (endMinutes <= startMinutes) continue;
+      // For each week in the range, create one multi-day slot per group
+      for (let weekStart = new Date(sDate); weekStart <= eDate; weekStart.setDate(weekStart.getDate() + 7)) {
+        for (const group of dayGroups) {
+          // Find the first and last day of this group within the current week
+          let firstDate: Date | null = null;
+          let lastDate: Date | null = null;
 
-      const dateBase = new Date(d);
-      const dayStart = new Date(dateBase.getFullYear(), dateBase.getMonth(), dateBase.getDate());
+          for (let d = new Date(weekStart); d < new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000) && d <= eDate; d.setDate(d.getDate() + 1)) {
+            if (d < sDate) continue;
+            const dow = d.getDay();
 
-      const start = addMinutesToDate(dayStart, startMinutes);
-      const end = addMinutesToDate(dayStart, endMinutes);
+            if (group.includes(dow)) {
+              if (!firstDate) firstDate = new Date(d);
+              lastDate = new Date(d);
+            }
+          }
 
-      slots.push({
-        start_time: start.toISOString(),
-        end_time: end.toISOString(),
-        capacity: dayRange.capacity,
-        service_id: serviceId || record?.id,
-      });
+          if (firstDate && lastDate) {
+            const firstDow = firstDate.getDay();
+            const lastDow = lastDate.getDay();
+
+            const startMinutes = parseTimeToMinutes(dayRanges[firstDow].startTime);
+            const endMinutes = parseTimeToMinutes(dayRanges[lastDow].endTime);
+
+            const dayStart = new Date(firstDate.getFullYear(), firstDate.getMonth(), firstDate.getDate());
+            const dayEnd = new Date(lastDate.getFullYear(), lastDate.getMonth(), lastDate.getDate());
+
+            const start = addMinutesToDate(dayStart, startMinutes);
+            const end = addMinutesToDate(dayEnd, endMinutes);
+
+            // Use the capacity from the first day of the group
+            const capacity = dayRanges[firstDow].capacity;
+
+            slots.push({
+              start_time: start.toISOString(),
+              end_time: end.toISOString(),
+              capacity,
+              service_id: serviceId || record?.id,
+            });
+          }
+        }
+      }
+    } else {
+      // Original single-day slot logic
+      for (let d = new Date(sDate); d <= eDate; d.setDate(d.getDate() + 1)) {
+        const dow = d.getDay();
+        if (!selectedDays.includes(dow)) continue;
+
+        const dayRange = dayRanges[dow];
+        const startMinutes = parseTimeToMinutes(dayRange.startTime);
+        const endMinutes = parseTimeToMinutes(dayRange.endTime);
+
+        if (endMinutes <= startMinutes) continue;
+
+        const dateBase = new Date(d);
+        const dayStart = new Date(dateBase.getFullYear(), dateBase.getMonth(), dateBase.getDate());
+
+        const start = addMinutesToDate(dayStart, startMinutes);
+        const end = addMinutesToDate(dayStart, endMinutes);
+
+        slots.push({
+          start_time: start.toISOString(),
+          end_time: end.toISOString(),
+          capacity: dayRange.capacity,
+          service_id: serviceId || record?.id,
+        });
+      }
     }
 
     setPreview(slots);
@@ -230,7 +329,14 @@ export default function TimeSlotGenerator({ serviceId, defaultCapacity = 1, onGe
 
   return (
     <div style={{ padding: "1rem", border: "1px solid #444", borderRadius: 6, backgroundColor: "#1e1e1e", color: "#e0e0e0" }}>
-      <h3 style={{ marginTop: 0, color: "#fff" }}>Time Slot Generator</h3>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h3 style={{ marginTop: 0, color: "#fff" }}>Time Slot Generator</h3>
+        {isMultiDay && (
+          <span style={{ padding: "4px 12px", background: "#1b5e20", color: "#4caf50", borderRadius: 4, fontSize: "0.85em", fontWeight: "bold" }}>
+            Multi-Day Mode
+          </span>
+        )}
+      </div>
 
       {/* Step 1: Date Range */}
       <div style={{ marginBottom: 16, paddingBottom: 16, borderBottom: "1px solid #444" }}>
@@ -261,6 +367,11 @@ export default function TimeSlotGenerator({ serviceId, defaultCapacity = 1, onGe
       {/* Step 2: Days */}
       <div style={{ marginBottom: 16, paddingBottom: 16, borderBottom: "1px solid #444" }}>
         <h4 style={{ color: "#fff" }}>Step 2: Days</h4>
+        {isMultiDay && (
+          <p style={{ fontSize: "0.9em", color: "#aaa", marginBottom: 8, fontStyle: "italic" }}>
+            💡 Consecutive days will be grouped into single multi-day slots (e.g., Fri-Sat-Sun becomes one event)
+          </p>
+        )}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {days.map((d, i) => (
             <label key={d} style={{ userSelect: "none", color: "#e0e0e0" }}>
@@ -382,25 +493,33 @@ export default function TimeSlotGenerator({ serviceId, defaultCapacity = 1, onGe
                   </tr>
                 </thead>
                 <tbody>
-                  {preview.map((s, i) => (
-                    <tr key={i} style={{ borderTop: "1px solid #333", backgroundColor: conflicts.has(i) ? "#3d1e1e" : "transparent" }}>
-                      <td style={{ padding: 6, color: "#e0e0e0" }}>
-                        {new Date(s.start_time).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
-                      </td>
-                      <td style={{ padding: 6, color: "#e0e0e0" }}>
-                        {new Date(s.start_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })} -{" "}
-                        {new Date(s.end_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}
-                      </td>
-                      <td style={{ padding: 6, color: "#e0e0e0" }}>{s.capacity}</td>
-                      <td style={{ padding: 6 }}>
-                        {conflicts.has(i) ? (
-                          <span style={{ color: "#ff6b6b", fontWeight: "bold" }}>Conflict</span>
-                        ) : (
-                          <span style={{ color: "#4caf50", fontWeight: "bold" }}>✓ OK</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                  {preview.map((s, i) => {
+                    const startDate = new Date(s.start_time);
+                    const endDate = new Date(s.end_time);
+                    const startDateStr = startDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+                    const endDateStr = endDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+                    const isMultiDaySlot = startDateStr !== endDateStr;
+
+                    return (
+                      <tr key={i} style={{ borderTop: "1px solid #333", backgroundColor: conflicts.has(i) ? "#3d1e1e" : "transparent" }}>
+                        <td style={{ padding: 6, color: "#e0e0e0" }}>
+                          {isMultiDaySlot ? `${startDateStr} - ${endDateStr}` : startDateStr}
+                        </td>
+                        <td style={{ padding: 6, color: "#e0e0e0" }}>
+                          {startDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })} -{" "}
+                          {endDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}
+                        </td>
+                        <td style={{ padding: 6, color: "#e0e0e0" }}>{s.capacity}</td>
+                        <td style={{ padding: 6 }}>
+                          {conflicts.has(i) ? (
+                            <span style={{ color: "#ff6b6b", fontWeight: "bold" }}>Conflict</span>
+                          ) : (
+                            <span style={{ color: "#4caf50", fontWeight: "bold" }}>✓ OK</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -410,3 +529,5 @@ export default function TimeSlotGenerator({ serviceId, defaultCapacity = 1, onGe
     </div>
   );
 }
+
+

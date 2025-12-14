@@ -72,3 +72,5 @@ export const TimeSlotCreate = () => (
     </SimpleForm>
   </Create>
 );
+
+

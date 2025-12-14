@@ -1,119 +1,183 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createBrowserClient } from "@supabase/auth-helpers-nextjs";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
-const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+type Booking = {
+  id: string;
+  status: string;
+  services: { name: string } | null;
+  time_slots: { start_time: string; end_time: string } | null;
+};
+
+type Order = {
+  id: string;
+  total: number;
+  status: string;
+  stripe_payment_status: string | null;
+  created_at: string;
+};
 
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
-  const [bookings, setBookings] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [orderIdInput, setOrderIdInput] = useState("");
+  const [orderCancelMessage, setOrderCancelMessage] = useState<string | null>(null);
+  const [orderCancelError, setOrderCancelError] = useState<string | null>(null);
+  const [orderCancelLoading, setOrderCancelLoading] = useState(false);
 
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
+    let mounted = true;
+
+    const init = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
         router.push("/auth/login");
         return;
       }
+      if (!mounted) return;
 
       setUser(session.user);
 
-      // Fetch profile
       const { data: profileData } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", session.user.id)
         .single();
+      if (mounted) setProfile(profileData);
 
-      setProfile(profileData);
-
-      // Fetch upcoming bookings
-      const { data: bookingsData } = await supabase
-        .from("bookings")
-        .select(`
-          *,
-          services (name),
-          time_slots (start_time, end_time)
-        `)
-        .eq("user_id", session.user.id)
-        .in("status", ["confirmed", "pending"])
-        .gte("time_slots.start_time", new Date().toISOString())
-        .order("time_slots(start_time)", { ascending: true })
-        .limit(5);
-
-      setBookings(bookingsData || []);
-      setLoading(false);
+      await Promise.all([fetchBookings(session.user.id, mounted), fetchOrders(session.user.id, mounted)]);
+      if (mounted) setLoading(false);
     };
 
-    checkUser();
+    init();
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === "SIGNED_OUT") {
-          router.push("/auth/login");
-        }
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") {
+        router.push("/auth/login");
       }
-    );
+      if (event === "SIGNED_IN" && session && mounted) {
+        setUser(session.user);
+        fetchBookings(session.user.id, mounted);
+        fetchOrders(session.user.id, mounted);
+      }
+    });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      listener.subscription.unsubscribe();
+    };
   }, [router]);
+
+  const fetchBookings = async (userId?: string, mounted = true) => {
+    const targetId = userId || user?.id;
+    if (!targetId) return;
+
+    const { data: bookingsData } = await supabase
+      .from("bookings")
+      .select(
+        `
+        id,
+        status,
+        services (name),
+        time_slots (start_time, end_time)
+      `
+      )
+      .eq("user_id", targetId)
+      .in("status", ["confirmed", "pending"])
+      .gte("time_slots.start_time", new Date().toISOString())
+      .order("time_slots(start_time)", { ascending: true })
+      .limit(5);
+
+    if (mounted) setBookings((bookingsData as Booking[]) || []);
+  };
+
+  const fetchOrders = async (userId?: string, mounted = true) => {
+    const targetId = userId || user?.id;
+    if (!targetId) return;
+    const { data, error } = await supabase
+      .from("orders")
+      .select("id, total, status, stripe_payment_status, created_at")
+      .eq("user_id", targetId)
+      .order("created_at", { ascending: false })
+      .limit(5);
+    if (!mounted) return;
+    if (error) {
+      console.error("Failed to fetch orders:", error);
+      return;
+    }
+    setOrders((data as Order[]) || []);
+  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push("/");
   };
 
-  const fetchBookings = async () => {
-    if (!user) return;
-
-    const { data: bookingsData } = await supabase
-      .from("bookings")
-      .select(`
-        *,
-        services (name),
-        time_slots (start_time, end_time)
-      `)
-      .eq("user_id", user.id)
-      .in("status", ["confirmed", "pending"])
-      .gte("time_slots.start_time", new Date().toISOString())
-      .order("time_slots(start_time)", { ascending: true })
-      .limit(5);
-
-    setBookings(bookingsData || []);
-  };
-
-  const handleCancelClick = (booking: any) => {
+  const handleCancelClick = (booking: Booking) => {
     setSelectedBooking(booking);
     setShowCancelModal(true);
   };
 
   const handleCancelConfirm = async () => {
     if (!selectedBooking) return;
-
     setCancellingId(selectedBooking.id);
 
-    const { error } = await supabase
-      .from("bookings")
-      .update({ status: "cancelled" })
-      .eq("id", selectedBooking.id);
+    try {
+      // Fetch the booking to get its slot_id
+      const { data: bookingRow, error: fetchErr } = await supabase
+        .from("bookings")
+        .select("id, slot_id")
+        .eq("id", selectedBooking.id)
+        .single();
 
-    if (error) {
+      if (fetchErr) {
+        throw fetchErr;
+      }
+
+      // Decrement booked_count for the slot, restore availability
+      if (bookingRow?.slot_id) {
+        const { data: slot } = await supabase
+          .from("time_slots")
+          .select("booked_count, capacity")
+          .eq("id", bookingRow.slot_id)
+          .single();
+
+        if (slot) {
+          const newCount = Math.max(0, (slot.booked_count ?? 0) - 1);
+          const isAvailable = newCount < (slot.capacity ?? 0);
+          await supabase
+            .from("time_slots")
+            .update({ booked_count: newCount, is_available: isAvailable })
+            .eq("id", bookingRow.slot_id);
+        }
+      }
+
+      // Remove the booking entirely to avoid unique constraint conflicts
+      const { error: deleteErr } = await supabase
+        .from("bookings")
+        .delete()
+        .eq("id", selectedBooking.id);
+
+      if (deleteErr) {
+        throw deleteErr;
+      }
+
+      await fetchBookings();
+    } catch (error) {
       console.error("Error cancelling booking:", error);
       alert("Failed to cancel booking. Please try again.");
-    } else {
-      // Refresh bookings
-      await fetchBookings();
     }
 
     setCancellingId(null);
@@ -121,206 +185,265 @@ export default function DashboardPage() {
     setSelectedBooking(null);
   };
 
+  const handleOrderCancel = async () => {
+    setOrderCancelError(null);
+    setOrderCancelMessage(null);
+    if (!orderIdInput.trim()) {
+      setOrderCancelError("Enter an order ID");
+      return;
+    }
+    setOrderCancelLoading(true);
+    try {
+      const res = await fetch("/api/orders/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: orderIdInput.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to cancel order");
+      }
+      setOrderCancelMessage("Order cancelled and any bookings released.");
+      setOrderIdInput("");
+      await fetchBookings();
+    } catch (err: any) {
+      setOrderCancelError(err.message || "Failed to cancel order");
+    } finally {
+      setOrderCancelLoading(false);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black">
-        <div className="text-zinc-600 dark:text-zinc-400">Loading...</div>
-      </div>
+      <main className="page" style={{ textAlign: "center" }}>
+        <p>Loading...</p>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black">
-      <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <Link href="/" className="text-xl font-bold text-black dark:text-white">
-            Panhandle Pathway
-          </Link>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-zinc-600 dark:text-zinc-400">
-              {user?.email}
-            </span>
-            {profile?.is_org_admin && (
-              <Link
-                href="/org"
-                className="rounded-md bg-blue-100 px-3 py-1.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
-              >
-                Org Portal
-              </Link>
-            )}
+    <main className="page">
+      <section className="section" style={{ marginBottom: 24 }}>
+        <div className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
+          <div>
+            <p className="eyebrow">Account</p>
+            <h1 style={{ margin: "4px 0" }}>Hi, {profile?.full_name || user?.email}</h1>
+            <p className="section__lede">Manage your bookings, profile, and settings.</p>
+          </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
             {profile?.role === "admin" && (
-              <Link
-                href="/admin"
-                className="rounded-md bg-zinc-200 px-3 py-1.5 text-sm font-medium text-black transition-colors hover:bg-zinc-300 dark:bg-zinc-700 dark:text-white dark:hover:bg-zinc-600"
-              >
-                Admin Panel
+              <Link className="btn-ghost" href="/admin">
+                Admin
               </Link>
             )}
-            <button
-              onClick={handleSignOut}
-              className="rounded-md bg-black px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-            >
-              Sign Out
+            {profile?.is_org_admin && (
+              <Link className="btn-ghost" href="/org">
+                Org portal
+              </Link>
+            )}
+            <button onClick={handleSignOut} className="btn-primary">
+              Sign out
             </button>
           </div>
         </div>
-      </header>
+      </section>
 
-      <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-black dark:text-white">
-          Welcome, {profile?.full_name || user?.email}!
-        </h1>
-        <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-          This is your personal dashboard.
-        </p>
+      <section className="grid-cards">
+        <div className="card">
+          <h2>Your profile</h2>
+          <ul className="feature-list">
+            <li>
+              <strong>Email:</strong> {user?.email}
+            </li>
+            <li>
+              <strong>Name:</strong> {profile?.full_name || "Not set"}
+            </li>
+            <li>
+              <strong>Role:</strong> {profile?.role || "user"}
+            </li>
+          </ul>
+        </div>
 
-        <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {/* Quick Links */}
-          <div className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-            <h2 className="text-lg font-semibold text-black dark:text-white">
-              Quick Links
-            </h2>
-            <div className="mt-4 space-y-2">
-              <Link
-                href="/store"
-                className="block text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white"
-              >
-                → Visit Store
+        <div className="card">
+          <h2>Quick links</h2>
+          <div className="feature-list">
+            <li>
+              <Link className="link" href="/store">
+                Visit store
               </Link>
-              <Link
-                href="/book"
-                className="block text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white"
-              >
-                → Book an Appointment
+            </li>
+            <li>
+              <Link className="link" href="/book">
+                Book an appointment
               </Link>
-            </div>
-          </div>
-
-          {/* Profile Info */}
-          <div className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-            <h2 className="text-lg font-semibold text-black dark:text-white">
-              Your Profile
-            </h2>
-            <div className="mt-4 space-y-2 text-sm">
-              <p className="text-zinc-600 dark:text-zinc-400">
-                <span className="font-medium text-black dark:text-white">Email:</span>{" "}
-                {user?.email}
-              </p>
-              <p className="text-zinc-600 dark:text-zinc-400">
-                <span className="font-medium text-black dark:text-white">Name:</span>{" "}
-                {profile?.full_name || "Not set"}
-              </p>
-              <p className="text-zinc-600 dark:text-zinc-400">
-                <span className="font-medium text-black dark:text-white">Role:</span>{" "}
-                {profile?.role || "user"}
-              </p>
-            </div>
-          </div>
-
-          {/* Upcoming Bookings */}
-          <div className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-            <h2 className="text-lg font-semibold text-black dark:text-white">
-              Upcoming Bookings
-            </h2>
-            {bookings.length === 0 ? (
-              <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
-                No upcoming bookings.
-              </p>
-            ) : (
-              <div className="mt-4 space-y-3">
-                {bookings.map((booking: any) => (
-                  <div
-                    key={booking.id}
-                    className="rounded-md border border-zinc-200 p-3 dark:border-zinc-700"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <p className="font-medium text-black dark:text-white">
-                          {booking.services?.name}
-                        </p>
-                        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                          {new Date(booking.time_slots?.start_time).toLocaleDateString()} at{" "}
-                          {new Date(booking.time_slots?.start_time).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
-                        <span
-                          className={`mt-2 inline-block rounded-full px-2 py-1 text-xs font-medium ${
-                            booking.status === "confirmed"
-                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                              : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
-                          }`}
-                        >
-                          {booking.status}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => handleCancelClick(booking)}
-                        disabled={cancellingId === booking.id}
-                        className="ml-2 rounded-md px-2 py-1 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/20"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            </li>
           </div>
         </div>
-      </main>
 
-      {/* Cancel Confirmation Modal */}
+        <div className="card">
+          <h2>Support</h2>
+          <p className="section__lede">Need help? Reach out to support anytime.</p>
+          <Link className="btn-primary" href="mailto:support@panhandlepathways.com">
+            Email support
+          </Link>
+        </div>
+
+        <div className="card">
+          <h2>Orders</h2>
+          <p className="section__lede">Cancel an order and release any associated bookings.</p>
+          <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <input
+              type="text"
+              value={orderIdInput}
+              onChange={(e) => setOrderIdInput(e.target.value)}
+              placeholder="Order ID"
+              style={{
+                flex: "1 1 180px",
+                padding: "10px 12px",
+                borderRadius: 10,
+                border: "1px solid rgba(0,0,0,0.12)",
+              }}
+            />
+            <button
+              onClick={handleOrderCancel}
+              disabled={orderCancelLoading}
+              className="btn-ghost"
+              style={{ whiteSpace: "nowrap", minHeight: 40 }}
+            >
+              {orderCancelLoading ? "Cancelling..." : "Cancel order"}
+            </button>
+          </div>
+          {orderCancelError ? (
+            <p style={{ marginTop: 8, color: "#b91c1c", fontWeight: 600 }}>{orderCancelError}</p>
+          ) : null}
+          {orderCancelMessage ? (
+            <p style={{ marginTop: 8, color: "#15803d", fontWeight: 600 }}>{orderCancelMessage}</p>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="section__header">
+          <p className="eyebrow">Orders</p>
+          <h2>Recent orders</h2>
+        </div>
+        <div className="grid-cards">
+          {orders.length === 0 ? (
+            <div className="card">
+              <p className="section__lede">No orders yet.</p>
+            </div>
+          ) : (
+            orders.slice(0, 3).map((order) => (
+              <Link key={order.id} href={`/orders#${order.id}`} className="card card--bordered" style={{ display: "block" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <h3>Order {order.id}</h3>
+                    <p className="section__lede">
+                      ${order.total.toFixed(2)} · {new Date(order.created_at).toLocaleDateString()}
+                    </p>
+                    <p className="section__lede">
+                      Status: {order.status} {order.stripe_payment_status ? `(${order.stripe_payment_status})` : ""}
+                    </p>
+                  </div>
+                  <span className="pill">View</span>
+                </div>
+              </Link>
+            ))
+          )}
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <Link className="btn-primary" href="/orders">
+            View all orders
+          </Link>
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="section__header">
+          <p className="eyebrow">Bookings</p>
+          <h2>Upcoming bookings</h2>
+        </div>
+        <div className="grid-cards">
+          {bookings.length === 0 ? (
+            <div className="card">
+              <p className="section__lede">No upcoming bookings.</p>
+              <Link className="btn-primary" href="/book" style={{ marginTop: 12 }}>
+                Book now
+              </Link>
+            </div>
+          ) : (
+            bookings.map((booking) => (
+              <div key={booking.id} className="card card--bordered">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <h3>{booking.services?.name}</h3>
+                    <p className="section__lede">
+                      {booking.time_slots?.start_time
+                        ? `${new Date(booking.time_slots.start_time).toLocaleDateString()} at ${new Date(booking.time_slots.start_time).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}`
+                        : "Date/time TBA"}
+                    </p>
+                    <span
+                      className="badge"
+                      style={{
+                        background: booking.status === "confirmed" ? "rgba(16,185,129,0.15)" : "rgba(255,196,85,0.25)",
+                        color: booking.status === "confirmed" ? "#15803d" : "#92400e",
+                      }}
+                    >
+                      {booking.status}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => handleCancelClick(booking)}
+                    disabled={cancellingId === booking.id}
+                    className="btn-ghost"
+                    style={{ borderColor: "rgba(220,38,38,0.3)", color: "#b91c1c" }}
+                  >
+                    {cancellingId === booking.id ? "Cancelling..." : "Cancel"}
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
       {showCancelModal && selectedBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-lg border border-zinc-200 bg-white p-6 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
-            <h3 className="text-lg font-semibold text-black dark:text-white">
-              Cancel Booking?
-            </h3>
-            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-              Are you sure you want to cancel your booking for{" "}
-              <strong className="text-black dark:text-white">
-                {selectedBooking.services?.name}
-              </strong>{" "}
-              on{" "}
-              <strong className="text-black dark:text-white">
-                {new Date(selectedBooking.time_slots?.start_time).toLocaleDateString()}
-              </strong>{" "}
-              at{" "}
-              <strong className="text-black dark:text-white">
-                {new Date(selectedBooking.time_slots?.start_time).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </strong>
+          <div className="card" style={{ maxWidth: 520, width: "100%" }}>
+            <h3>Cancel booking?</h3>
+            <p className="section__lede">
+              Are you sure you want to cancel {selectedBooking.services?.name} on{" "}
+              {selectedBooking.time_slots?.start_time
+                ? new Date(selectedBooking.time_slots.start_time).toLocaleDateString()
+                : "this date"}
               ?
             </p>
-            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-              This action cannot be undone.
-            </p>
-            <div className="mt-6 flex gap-3">
+            <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
               <button
                 onClick={() => {
                   setShowCancelModal(false);
                   setSelectedBooking(null);
                 }}
-                disabled={cancellingId !== null}
-                className="flex-1 rounded-md border border-zinc-300 bg-white py-2 text-black transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
+                className="btn-ghost"
+                style={{ flex: 1 }}
               >
-                Keep Booking
+                Keep booking
               </button>
               <button
                 onClick={handleCancelConfirm}
                 disabled={cancellingId !== null}
-                className="flex-1 rounded-md bg-red-600 py-2 text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="btn-primary"
+                style={{ flex: 1, background: "#dc2626" }}
               >
-                {cancellingId ? "Cancelling..." : "Yes, Cancel"}
+                {cancellingId ? "Cancelling..." : "Yes, cancel"}
               </button>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </main>
   );
 }

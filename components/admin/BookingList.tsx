@@ -46,10 +46,9 @@ const BookingListActions = () => {
           border: "none",
           borderRadius: 4,
           cursor: "pointer",
-          marginRight: "0.5rem",
         }}
       >
-        📥 Export CSV
+        Export CSV
       </button>
     </TopToolbar>
   );
@@ -58,11 +57,7 @@ const BookingListActions = () => {
 // Filter component
 const BookingFilter = () => (
   <Filter>
-    <SelectInput
-      source="status"
-      label="Status"
-      choices={statusChoices}
-    />
+    <SelectInput source="status" label="Status" choices={statusChoices} />
     <ReferenceInput source="service_id" reference="services" label="Service">
       <SelectInput optionText="name" />
     </ReferenceInput>

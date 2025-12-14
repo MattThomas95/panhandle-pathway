@@ -36,6 +36,14 @@ export const ServiceCreate = () => (
         fullWidth
       />
       <BooleanInput source="is_active" label="Active" defaultValue={true} />
+      <BooleanInput
+        source="is_multi_day"
+        label="Multi-day Activity"
+        defaultValue={false}
+        helperText="Check if this service spans multiple days (e.g., retreats, multi-day workshops)"
+      />
     </SimpleForm>
   </Create>
 );
+
+

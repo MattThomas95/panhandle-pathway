@@ -9,15 +9,17 @@ import {
   Filter,
   TextInput,
   TopToolbar,
+  CreateButton,
 } from "react-admin";
 import { useExportCSV } from "./useExportCSV";
 
-// Export button component
+// Export + create actions
 const OrganizationListActions = () => {
   const { exportToCSV } = useExportCSV();
 
   return (
     <TopToolbar>
+      <CreateButton />
       <button
         onClick={() =>
           exportToCSV({
@@ -33,10 +35,10 @@ const OrganizationListActions = () => {
           border: "none",
           borderRadius: 4,
           cursor: "pointer",
-          marginRight: "0.5rem",
+          marginLeft: "0.5rem",
         }}
       >
-        📥 Export CSV
+        Export CSV
       </button>
     </TopToolbar>
   );
@@ -63,3 +65,5 @@ export const OrganizationList = () => (
     </Datagrid>
   </List>
 );
+
+

@@ -12,15 +12,17 @@ import {
   BooleanInput,
   RangeInput,
   TopToolbar,
+  CreateButton,
 } from "react-admin";
 import { useExportCSV } from "./useExportCSV";
 
-// Export button component
+// Export + create actions
 const ServiceListActions = () => {
   const { exportToCSV } = useExportCSV();
 
   return (
     <TopToolbar>
+      <CreateButton />
       <button
         onClick={() =>
           exportToCSV({
@@ -36,10 +38,10 @@ const ServiceListActions = () => {
           border: "none",
           borderRadius: 4,
           cursor: "pointer",
-          marginRight: "0.5rem",
+          marginLeft: "0.5rem",
         }}
       >
-        📥 Export CSV
+        Export CSV
       </button>
     </TopToolbar>
   );
@@ -68,3 +70,5 @@ export const ServiceList = () => (
     </Datagrid>
   </List>
 );
+
+

@@ -13,7 +13,6 @@ type Product = {
 
 async function getProducts(): Promise<Product[]> {
   const supabase = createServerSupabaseClient();
-  
   const { data, error } = await supabase
     .from("products")
     .select("*")
@@ -32,85 +31,82 @@ export default async function StorePage() {
   const products = await getProducts();
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black">
-      <header className="border-b border-zinc-200 dark:border-zinc-800">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold text-black dark:text-white">
-              Store
-            </h1>
-            <Link
-              href="/"
-              className="text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white"
-            >
-              ← Back to Home
+    <main className="page">
+      <header className="hero" style={{ marginBottom: 32 }}>
+        <div className="hero__text">
+          <span className="badge badge-blue">Programs & Resources</span>
+          <h1>Shop training programs and materials</h1>
+          <p>
+            Enroll in CDA, director certification, and leadership workshops with trusted resources.
+          </p>
+          <div className="hero__cta">
+            <Link className="btn-primary" href="/book">
+              Book a consult
             </Link>
+            <Link className="btn-gold" href="/cart">
+              View cart
+            </Link>
+          </div>
+        </div>
+        <div className="hero__image">
+          <div className="hero__image-placeholder">
+            <span>Replace with program imagery</span>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <section className="section">
+        <div className="section__header">
+          <p className="eyebrow">Catalog</p>
+          <h2>Available programs</h2>
+          <p className="section__lede">Online and hybrid options with upcoming cohorts.</p>
+        </div>
+
         {products.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-zinc-600 dark:text-zinc-400">
-              No products available yet.
-            </p>
+          <div className="card" style={{ textAlign: "center" }}>
+            <p>No products available yet.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid-cards">
             {products.map((product) => (
-              <div
+              <Link
                 key={product.id}
-                className="group rounded-lg border border-zinc-200 bg-white p-4 transition-shadow hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900"
+                href={`/store/${product.id}`}
+                className="card card--bordered"
+                style={{ display: "block" }}
               >
-                <div className="aspect-[3/4] overflow-hidden rounded-md bg-zinc-100 dark:bg-zinc-800">
+                <div className="aspect-square hero__image" style={{ marginBottom: 16 }}>
                   {product.image_url ? (
                     <img
                       src={product.image_url}
                       alt={product.name}
-                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
                     />
                   ) : (
-                    <div className="flex h-full items-center justify-center text-zinc-400">
-                      No image
+                    <div className="hero__image-placeholder" style={{ minHeight: 180 }}>
+                      <span>No image</span>
                     </div>
                   )}
                 </div>
-                <div className="mt-4">
-                  <h3 className="font-semibold text-black dark:text-white">
-                    {product.name}
-                  </h3>
-                  {product.description && (
-                    <p className="mt-1 line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400">
-                      {product.description}
-                    </p>
-                  )}
-                  <div className="mt-3 flex items-center justify-between">
-                    <span className="text-lg font-bold text-black dark:text-white">
-                      ${product.price.toFixed(2)}
-                    </span>
-                    {product.inventory > 0 ? (
-                      <span className="text-sm text-green-600 dark:text-green-400">
-                        In Stock
-                      </span>
-                    ) : (
-                      <span className="text-sm text-red-600 dark:text-red-400">
-                        Out of Stock
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    className="mt-4 w-full rounded-full bg-black py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-                    disabled={product.inventory === 0}
+                <h3>{product.name}</h3>
+                {product.description && <p className="section__lede">{product.description}</p>}
+                <div className="card__footer">
+                  <span className="badge badge-gold">${product.price.toFixed(2)}</span>
+                  <span
+                    className="pill"
+                    style={{
+                      background: product.inventory > 0 ? "rgba(46,163,217,0.12)" : "rgba(240,64,64,0.12)",
+                      color: product.inventory > 0 ? "var(--blue-primary)" : "#b91c1c",
+                    }}
                   >
-                    Add to Cart
-                  </button>
+                    {product.inventory > 0 ? "In stock" : "Out of stock"}
+                  </span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}
-      </main>
-    </div>
+      </section>
+    </main>
   );
 }

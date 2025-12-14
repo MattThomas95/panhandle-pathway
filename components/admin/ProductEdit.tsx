@@ -21,3 +21,5 @@ export const ProductEdit = () => (
     </SimpleForm>
   </Edit>
 );
+
+

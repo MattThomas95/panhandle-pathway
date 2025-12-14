@@ -13,6 +13,7 @@ import {
   useRefresh,
   useRecordContext,
 } from "react-admin";
+import { useFormContext, useWatch } from "react-hook-form";
 
 import TimeSlotGenerator from "./TimeSlotGenerator";
 
@@ -21,6 +22,41 @@ type GeneratedSlot = {
   end_time: string;
   capacity: number;
   service_id?: string;
+};
+
+const TimeSlotGeneratorWithWatch = ({
+  serviceId,
+  defaultCapacity,
+  record,
+  onGenerate,
+}: {
+  serviceId: string;
+  defaultCapacity: number;
+  record: any;
+  onGenerate: (slots: GeneratedSlot[]) => void;
+}) => {
+  const form = useFormContext();
+
+  // Default to record value to avoid crashing when form context is unavailable
+  let isMultiDay = record?.is_multi_day || false;
+
+  if (form?.control) {
+    const watchedIsMultiDay = useWatch({
+      control: form.control,
+      name: "is_multi_day",
+      defaultValue: isMultiDay,
+    });
+    isMultiDay = (watchedIsMultiDay ?? isMultiDay) || false;
+  }
+
+  return (
+    <TimeSlotGenerator
+      serviceId={serviceId}
+      defaultCapacity={defaultCapacity}
+      isMultiDay={isMultiDay}
+      onGenerate={onGenerate}
+    />
+  );
 };
 
 export const ServiceEdit = () => {
@@ -105,11 +141,21 @@ export const ServiceEdit = () => {
           />
           <NumberInput source="price" validate={[required(), minValue(0)]} fullWidth />
           <BooleanInput source="is_active" label="Active" />
+          <BooleanInput
+            source="is_multi_day"
+            label="Multi-day Activity"
+            helperText="Check if this service spans multiple days (e.g., retreats, multi-day workshops)"
+          />
         </FormTab>
 
         <FormTab label="Time Slots">
           <div style={{ marginBottom: 12 }}>
-            <TimeSlotGenerator serviceId={String(record?.id ?? "")} defaultCapacity={record?.capacity || 1} onGenerate={handleGenerate} />
+            <TimeSlotGeneratorWithWatch
+              serviceId={String(record?.id ?? "")}
+              defaultCapacity={record?.capacity || 1}
+              record={record}
+              onGenerate={handleGenerate}
+            />
           </div>
 
           {previewSlots.length > 0 && (

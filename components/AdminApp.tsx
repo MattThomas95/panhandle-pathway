@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Admin, Resource } from "react-admin";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Admin, Resource, defaultTheme } from "react-admin";
+import { createTheme } from "@mui/material/styles";
 import { supabase as supabaseClient, supabaseJsClient } from "@/lib/supabase";
 import { Dashboard } from "./admin/Dashboard";
 import { RevenuePage } from "./admin/RevenuePage";
@@ -23,9 +23,62 @@ import { BookingEdit } from "./admin/BookingEdit";
 import { TimeSlotList } from "./admin/TimeSlotList";
 import { TimeSlotEdit } from "./admin/TimeSlotEdit";
 import { TimeSlotCreate } from "./admin/TimeSlotCreate";
+import { OrderList } from "./admin/OrderList";
+import { OrderEdit } from "./admin/OrderEdit";
+import { OrderShow } from "./admin/OrderShow";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+
+const adminTheme = createTheme({
+  ...defaultTheme,
+  palette: {
+    mode: "light",
+    primary: {
+      main: "#1e7fb6",
+    },
+    secondary: {
+      main: "#f2b705",
+    },
+    background: {
+      default: "#f7f2e7",
+      paper: "#ffffff",
+    },
+  },
+  typography: {
+    fontFamily: '"Inter", "Helvetica Neue", Arial, sans-serif',
+    h1: { fontWeight: 700 },
+    h2: { fontWeight: 700 },
+    h3: { fontWeight: 600 },
+  },
+  components: {
+    MuiAppBar: {
+      styleOverrides: {
+        colorPrimary: {
+          backgroundColor: "#103b64",
+          color: "#ffffff",
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 10,
+          textTransform: "none",
+          fontWeight: 600,
+        },
+      },
+    },
+    RaMenuItemLink: {
+      styleOverrides: {
+        root: {
+          borderRadius: 10,
+          margin: "2px 6px",
+        },
+      },
+    },
+  },
+});
 
 // Create custom data provider that uses Supabase client methods directly
 // This ensures JWT token is automatically included in all requests
@@ -345,33 +398,52 @@ const authProvider = {
 export default function AdminApp() {
   const [isClient, setIsClient] = useState(false);
   const [dataProvider, setDataProvider] = useState<any>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     // Transfer session from SSR client to JS client for proper Authorization headers
     const initDataProvider = async () => {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      console.log('Initializing data provider:', {
-        hasSession: !!session,
-        accessToken: session?.access_token ? 'present' : 'missing',
-        userId: session?.user?.id
-      });
+      try {
+        // Wait for any pending auth state to settle
+        await new Promise(resolve => setTimeout(resolve, 200));
 
-      if (session) {
-        // Transfer session to JS client which properly sends Authorization headers
-        await supabaseJsClient.auth.setSession({
-          access_token: session.access_token,
-          refresh_token: session.refresh_token,
+        // Get the session from the server-side client (which has cookies)
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        console.log('AdminApp - Initializing data provider:', {
+          hasSession: !!session,
+          accessToken: session?.access_token ? 'present' : 'missing',
+          userId: session?.user?.id,
+          email: session?.user?.email
         });
 
-        // Verify the JS client has the user
-        const { data: { user } } = await supabaseJsClient.auth.getUser();
-        console.log('JS client user verified:', { hasUser: !!user, userId: user?.id });
+        if (session) {
+          // Transfer session to JS client which properly sends Authorization headers
+          const { error: setSessionError } = await supabaseJsClient.auth.setSession({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+          });
 
-        // Use JS client for data provider - it sends proper Authorization headers
-        setDataProvider(createDataProvider(supabaseJsClient));
-        console.log('Data provider initialized with JS client');
-      } else {
-        console.error('No session found in cookies!');
+          if (setSessionError) {
+            console.error('Error setting session on JS client:', setSessionError);
+          } else {
+            console.log('Session successfully transferred to JS client');
+          }
+
+          // Verify the JS client has the user
+          const { data: { user } } = await supabaseJsClient.auth.getUser();
+          console.log('JS client user verified:', { hasUser: !!user, userId: user?.id });
+
+          // Use JS client for data provider - it sends proper Authorization headers
+          setDataProvider(createDataProvider(supabaseJsClient));
+          console.log('Data provider initialized with JS client');
+          setIsInitialized(true);
+        } else {
+          console.error('No session found in AdminApp initialization!');
+          setIsInitialized(true);
+        }
+      } catch (err) {
+        console.error('Error initializing data provider:', err);
+        setIsInitialized(true);
       }
 
       setIsClient(true);
@@ -383,62 +455,60 @@ export default function AdminApp() {
   if (!isClient || !dataProvider) return null;
 
   return (
-    <BrowserRouter basename="/admin">
-      <Admin
-        dataProvider={dataProvider}
-        authProvider={authProvider}
-        loginPage={false}
-        requireAuth
-        dashboard={Dashboard}
-      >
-        <Routes>
-          <Route path="/revenue" element={<RevenuePage />} />
-          <Route
-            path="/"
-            element={
-              <>
-                <Resource
-                  name="profiles"
-                  list={ProfileList}
-                  edit={ProfileEdit}
-                  create={ProfileCreate}
-                  options={{ label: "Users" }}
-                />
-                <Resource
-                  name="organizations"
-                  list={OrganizationList}
-                  edit={OrganizationEdit}
-                  create={OrganizationCreate}
-                />
-                <Resource
-                  name="products"
-                  list={ProductList}
-                  edit={ProductEdit}
-                  create={ProductCreate}
-                />
-                <Resource
-                  name="services"
-                  list={ServiceList}
-                  edit={ServiceEdit}
-                  create={ServiceCreate}
-                />
-                <Resource
-                  name="bookings"
-                  list={BookingList}
-                  edit={BookingEdit}
-                />
-                <Resource
-                  name="time_slots"
-                  list={TimeSlotList}
-                  edit={TimeSlotEdit}
-                  create={TimeSlotCreate}
-                  options={{ label: "Time Slots" }}
-                />
-              </>
-            }
-          />
-        </Routes>
-      </Admin>
-    </BrowserRouter>
+    <Admin
+      dataProvider={dataProvider}
+      theme={adminTheme}
+      authProvider={authProvider}
+      loginPage={false}
+      requireAuth={false}
+      dashboard={Dashboard}
+    >
+      <Resource
+        name="profiles"
+        list={ProfileList}
+        edit={ProfileEdit}
+        create={ProfileCreate}
+        options={{ label: "Users" }}
+      />
+      <Resource
+        name="organizations"
+        list={OrganizationList}
+        edit={OrganizationEdit}
+        create={OrganizationCreate}
+      />
+      <Resource
+        name="products"
+        list={ProductList}
+        edit={ProductEdit}
+        create={ProductCreate}
+      />
+      <Resource
+        name="services"
+        list={ServiceList}
+        edit={ServiceEdit}
+        create={ServiceCreate}
+      />
+      <Resource
+        name="bookings"
+        list={BookingList}
+        edit={BookingEdit}
+      />
+      <Resource
+        name="time_slots"
+        list={TimeSlotList}
+        edit={TimeSlotEdit}
+        create={TimeSlotCreate}
+        options={{ label: "Time Slots" }}
+      />
+      <Resource
+        name="orders"
+        list={OrderList}
+        edit={OrderEdit}
+        show={OrderShow}
+      />
+      <Resource
+        name="order_items"
+      />
+    </Admin>
   );
 }

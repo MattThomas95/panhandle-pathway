@@ -92,3 +92,5 @@ export const TimeSlotEdit = () => (
     </SimpleForm>
   </Edit>
 );
+
+

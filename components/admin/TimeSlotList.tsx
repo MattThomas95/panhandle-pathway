@@ -116,19 +116,20 @@ const BulkDeleteSection = ({ selectedIds, onSelectionChange }: { selectedIds: Se
             opacity: isDeleting ? 0.6 : 1,
           }}
         >
-          {isDeleting ? "Deleting..." : `🗑️ Delete ${selectedIds.size} Selected`}
+          {isDeleting ? "Deleting..." : `Delete ${selectedIds.size} Selected`}
         </button>
       )}
     </div>
   );
 };
 
-// Export button component
+// Export and create actions
 const TimeSlotListActions = () => {
   const { exportToCSV } = useExportCSV();
 
   return (
     <TopToolbar>
+      <CreateButton />
       <button
         onClick={() =>
           exportToCSV({
@@ -147,10 +148,10 @@ const TimeSlotListActions = () => {
           border: "none",
           borderRadius: 4,
           cursor: "pointer",
-          marginRight: "0.5rem",
+          marginLeft: "0.5rem",
         }}
       >
-        📥 Export CSV
+        Export CSV
       </button>
     </TopToolbar>
   );
@@ -346,3 +347,9 @@ export const TimeSlotList = () => {
     </List>
   );
 };
+
+
+
+
+
+

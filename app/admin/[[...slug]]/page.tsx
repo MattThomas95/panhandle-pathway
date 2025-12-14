@@ -50,10 +50,17 @@ export default function AdminPage() {
         .eq("id", session.user.id)
         .single();
 
-      console.log("Profile check:", { profile, profileError });
+      console.log("Profile check:", { profile, profileError, role: profile?.role });
 
-      if (profileError || profile?.role !== "admin") {
-        console.log("Not admin, denying access");
+      if (profileError) {
+        console.error("Profile fetch error:", profileError);
+        setError("Error loading profile. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      if (profile?.role !== "admin") {
+        console.log("Not admin, user role is:", profile?.role);
         setError("Access denied. Admin privileges required.");
         setLoading(false);
         return;
