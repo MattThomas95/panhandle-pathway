@@ -248,7 +248,7 @@ export async function POST(req: NextRequest) {
                             await sendBookingConfirmationEmail({
                               to: profile.email,
                               userName: profile.full_name || "Customer",
-                              serviceName: slotData?.services?.name || "Service",
+                              serviceName: (slotData?.services as any)?.name || "Service",
                               startTime: slotData?.start_time || new Date().toISOString(),
                               endTime: slotData?.end_time || new Date().toISOString(),
                               bookingId: b.id,

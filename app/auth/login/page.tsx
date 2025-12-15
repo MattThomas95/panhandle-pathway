@@ -1,17 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+
+export const dynamic = 'force-dynamic';
 import { supabase } from "@/lib/supabase";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [redirectPath, setRedirectPath] = useState("/dashboard");
+
+  useEffect(() => {
+    const requestedRedirect = searchParams?.get("redirectedFrom");
+    setRedirectPath(requestedRedirect || "/dashboard");
+  }, [searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,9 +44,7 @@ export default function LoginPage() {
         return;
       }
 
-      const requestedRedirect = searchParams.get("redirectedFrom");
-      const redirectTo = requestedRedirect || "/dashboard";
-      router.push(redirectTo);
+      router.push(redirectPath);
     } catch (err: any) {
       setError(err.message || "An error occurred during login");
       setLoading(false);
@@ -105,5 +111,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="auth-layout"><div className="auth-card"><p>Loading...</p></div></div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

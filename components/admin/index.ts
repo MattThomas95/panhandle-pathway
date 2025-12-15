@@ -1,5 +1,4 @@
 export { Dashboard } from "./Dashboard";
-export { BookingCreate } from "./BookingCreate";
 export { BookingEdit } from "./BookingEdit";
 export { BookingList } from "./BookingList";
 export { OrganizationCreate } from "./OrganizationCreate";

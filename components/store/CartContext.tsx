@@ -13,6 +13,7 @@ export type CartItem = {
   slotId?: string;
   startTime?: string;
   endTime?: string;
+  bookingId?: string;
 };
 
 type CartContextType = {

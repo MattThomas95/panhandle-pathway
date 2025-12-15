@@ -98,7 +98,7 @@ export default function OrdersPage() {
           console.error("Failed to fetch order bookings:", obError);
         } else if (obData) {
           const grouped: Record<string, OrderBooking[]> = {};
-          (obData as OrderBooking[] & { order_id: string }[]).forEach((ob: any) => {
+          (obData as any).forEach((ob: any) => {
             const key = ob.order_id;
             grouped[key] = grouped[key] || [];
             grouped[key].push({ booking: ob.booking });

@@ -65,11 +65,9 @@ export default function BookPage() {
   }, [selectedService]);
 
   const fetchAllSlots = async () => {
-    const { data, error } = await supabase
-      .from("time_slots")
-      .select("*")
-      .gte("start_time", new Date().toISOString())
-      .order("start_time");
+    const { data, error } = await supabase.rpc("get_time_slots_with_availability", {
+      p_service_id: null,
+    });
 
     if (error) {
       console.error("Error fetching time slots:", error);
@@ -77,9 +75,13 @@ export default function BookPage() {
     }
 
     const grouped: Record<string, TimeSlot[]> = {};
-    (data || []).forEach((slot) => {
+    (data || []).forEach((slot: any) => {
       grouped[slot.service_id] = grouped[slot.service_id] || [];
-      grouped[slot.service_id].push(slot);
+      grouped[slot.service_id].push({
+        ...slot,
+        booked_count: slot.booked_count ?? 0,
+        is_available: slot.is_available ?? true,
+      } as TimeSlot);
     });
     setTimeSlotsMap(grouped);
   };
@@ -132,18 +134,23 @@ export default function BookPage() {
   const fetchTimeSlots = async () => {
     if (!selectedService) return;
 
-    const { data, error } = await supabase
-      .from("time_slots")
-      .select("*")
-      .eq("service_id", selectedService)
-      .gte("start_time", new Date().toISOString())
-      .order("start_time");
+    const { data, error } = await supabase.rpc("get_time_slots_with_availability", {
+      p_service_id: selectedService,
+    });
 
     if (error) {
       console.error("Error fetching time slots:", error);
       setError(error.message || "Unable to load time slots. Please try again.");
     } else {
-      setTimeSlots(data || []);
+      const filtered = (data || [])
+        .filter((slot: any) => new Date(slot.start_time) >= new Date())
+        .sort((a: any, b: any) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+        .map((slot: any) => ({
+          ...slot,
+          booked_count: slot.booked_count ?? 0,
+          is_available: slot.is_available ?? true,
+        })) as TimeSlot[];
+      setTimeSlots(filtered);
     }
   };
 

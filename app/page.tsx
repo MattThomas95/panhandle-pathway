@@ -88,7 +88,7 @@ function Hero() {
           Online and hybrid training, expert instructors, and flexible pacing built for working educators.
         </p>
         <div className="hero__cta">
-          <Link className="btn-primary" href="/store">
+          <Link className="btn-primary" href="/book">
             Browse programs
           </Link>
           <Link className="btn-gold" href="/book">
@@ -129,7 +129,7 @@ function ProgramHighlights() {
               {program.duration} | {program.format}
             </p>
             <p style={{ color: "var(--blue-primary)", fontWeight: 600 }}>{program.next}</p>
-            <Link className="btn-primary" href={program.href}>
+            <Link className="btn-primary" href="/book">
               View details
             </Link>
           </article>
@@ -227,7 +227,7 @@ function CtaBand() {
         <Link className="btn-gold" href="/book">
           Book a consult
         </Link>
-        <Link className="btn-primary" href="/store">
+        <Link className="btn-primary" href="/book">
           Browse programs
         </Link>
       </div>

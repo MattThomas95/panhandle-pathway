@@ -100,7 +100,7 @@ export default function DashboardPage() {
       .order("time_slots(start_time)", { ascending: true })
       .limit(5);
 
-    if (mounted) setBookings((bookingsData as Booking[]) || []);
+    if (mounted) setBookings((bookingsData as any) || []);
   };
 
   const fetchOrders = async (userId?: string, mounted = true) => {

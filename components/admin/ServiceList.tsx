@@ -10,7 +10,6 @@ import {
   Filter,
   TextInput,
   BooleanInput,
-  RangeInput,
   TopToolbar,
   CreateButton,
 } from "react-admin";

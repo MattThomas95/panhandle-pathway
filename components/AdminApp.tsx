@@ -89,14 +89,26 @@ const createDataProvider = (client: any) => {
       const { field, order } = params.sort;
       const from = (page - 1) * perPage;
       const to = page * perPage - 1;
+      const filters = params.filter || {};
 
-      console.log(`getList ${resource}:`, { from, to, field, order });
+      console.log(`getList ${resource}:`, { from, to, field, order, filters });
 
-      const query = client
+      let query = client
         .from(resource)
         .select('*', { count: 'exact' })
         .range(from, to)
         .order(field, { ascending: order === 'ASC' });
+
+      // Apply filters (simple equality/ilike)
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value === undefined || value === null || value === "") return;
+        const isUuidLike = typeof value === "string" && /^[0-9a-fA-F-]{32,36}$/.test(value);
+        if (typeof value === "string" && !isUuidLike) {
+          query = query.ilike(key, `%${value}%`);
+        } else {
+          query = query.eq(key, value);
+        }
+      });
 
       const { data, error, count } = await query;
 

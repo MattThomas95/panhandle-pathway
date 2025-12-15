@@ -175,7 +175,6 @@ export async function POST(req: NextRequest) {
     };
 
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
       line_items: lineItems,
       mode: "payment",
       success_url: `${process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin}/order-confirmation/${order.id}?session_id={CHECKOUT_SESSION_ID}`,
@@ -188,7 +187,7 @@ export async function POST(req: NextRequest) {
       shipping_address_collection: {
         allowed_countries: ["US"],
       },
-    });
+    } as Stripe.Checkout.SessionCreateParams);
 
     // Update order with Stripe session ID
     await supabase
