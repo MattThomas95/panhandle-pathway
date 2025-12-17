@@ -92,6 +92,10 @@ export function SiteHeader() {
                 {link.label}
               </Link>
             ))}
+          </nav>
+        )}
+        {!isAdmin && (
+          <div className="site-header__actions">
             <Link href="/cart" className="site-nav__link site-nav__cart">
               <span className="site-nav__icon" aria-hidden="true">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -103,34 +107,34 @@ export function SiteHeader() {
               <span>Cart</span>
               {count > 0 ? <span className="site-nav__badge">{count > 99 ? "99+" : count}</span> : null}
             </Link>
-          </nav>
+            <div className="site-nav__auth site-nav__auth--compact">
+              {authReady ? (
+                userEmail ? (
+                  <>
+                    {userRole === "admin" ? (
+                      isAdmin ? (
+                        <Link href="/" className="btn-ghost btn-ghost--compact">
+                          View site
+                        </Link>
+                      ) : (
+                        <Link href="/admin" className="btn-ghost btn-ghost--compact">
+                          Admin
+                        </Link>
+                      )
+                    ) : null}
+                    <Link href="/dashboard" className="btn-ghost btn-ghost--compact">
+                      Account
+                    </Link>
+                  </>
+                ) : (
+                  <Link href="/auth/login" className="btn-ghost btn-ghost--compact">
+                    Sign in
+                  </Link>
+                )
+              ) : null}
+            </div>
+          </div>
         )}
-        <div className="site-nav__auth">
-          {authReady ? (
-            userEmail ? (
-              <>
-                {userRole === "admin" ? (
-                  isAdmin ? (
-                    <Link href="/" className="btn-ghost">
-                      View site
-                    </Link>
-                  ) : (
-                    <Link href="/admin" className="btn-ghost">
-                      Admin
-                    </Link>
-                  )
-                ) : null}
-                <Link href="/dashboard" className="btn-ghost">
-                  Account
-                </Link>
-              </>
-            ) : (
-              <Link href="/auth/login" className="btn-ghost">
-                Sign in
-              </Link>
-            )
-          ) : null}
-        </div>
       </div>
     </div>
   );
