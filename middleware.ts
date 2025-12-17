@@ -11,6 +11,7 @@ export async function middleware(req: NextRequest) {
   const maintenanceBypass = [
     '/maintenance',
     '/api/stripe/webhook',
+    '/api/maintenance-check',
   ];
 
   if (maintenanceOn && !maintenanceBypass.some((p) => pathname.startsWith(p))) {
