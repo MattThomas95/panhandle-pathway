@@ -13,10 +13,8 @@ import {
   useNotify,
   useRefresh,
   Filter,
-  TextInput,
   SelectInput,
   ReferenceInput,
-  BooleanInput,
   TopToolbar,
   CreateButton,
 } from "react-admin";
@@ -347,7 +345,6 @@ export const TimeSlotList = () => {
     </List>
   );
 };
-
 
 
 

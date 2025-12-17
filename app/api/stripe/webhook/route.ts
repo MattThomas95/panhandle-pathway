@@ -348,7 +348,7 @@ export async function POST(req: NextRequest) {
           .select("id")
           .eq("stripe_payment_id", paymentIntent.id);
 
-        let orderIdForRestore: string | undefined =
+        const orderIdForRestore: string | undefined =
           (orders && orders.length > 0 && (orders[0].id as string)) ||
           (paymentIntent.metadata?.orderId as string | undefined);
 
@@ -376,7 +376,7 @@ export async function POST(req: NextRequest) {
           .select("id")
           .eq("stripe_payment_id", charge.payment_intent as string);
 
-        let orderIdForRestore: string | undefined =
+        const orderIdForRestore: string | undefined =
           (orders && orders.length > 0 && (orders[0].id as string)) ||
           (charge.metadata?.orderId as string | undefined);
 

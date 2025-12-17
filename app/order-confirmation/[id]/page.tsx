@@ -1,6 +1,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+/* eslint-disable @next/next/no-img-element */
 
 type Order = {
   id: string;
@@ -106,7 +107,7 @@ export default async function OrderConfirmationPage({
                 Order Placed Successfully!
               </h2>
               <p className="mt-1 text-sm text-green-800 dark:text-green-200">
-                Thank you for your order. We'll send you a confirmation email shortly.
+                Thank you for your order. We&apos;ll send you a confirmation email shortly.
               </p>
             </div>
           </div>

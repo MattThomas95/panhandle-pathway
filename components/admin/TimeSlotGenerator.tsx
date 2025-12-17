@@ -223,7 +223,7 @@ export default function TimeSlotGenerator({ serviceId, defaultCapacity = 1, isMu
     const conflictIndices = detectConflicts(slots);
 
     // detect conflicts against existing slots in backend
-    let existingConflictSet = new Set<number>();
+    const existingConflictSet = new Set<number>();
     if ((serviceId || record?.id) && slots.length > 0) {
       try {
         const { data: existing = [] } = await dataProvider.getList("time_slots", {
@@ -529,5 +529,4 @@ export default function TimeSlotGenerator({ serviceId, defaultCapacity = 1, isMu
     </div>
   );
 }
-
 

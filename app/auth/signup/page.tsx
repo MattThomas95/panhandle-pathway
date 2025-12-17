@@ -84,7 +84,7 @@ export default function SignupPage() {
               Check your email
             </h2>
             <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-              We've sent a confirmation link to <strong>{email}</strong>. Please
+              We&apos;ve sent a confirmation link to <strong>{email}</strong>. Please
               click the link to verify your account.
             </p>
             <Link

@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import { useState, useEffect } from "react";
 import { useCart } from "@/components/store/CartContext";
@@ -298,7 +299,8 @@ export default function CheckoutPage() {
             )}
 
             <button
-              type="submit"
+              type="button"
+              onClick={handleSubmit}
               disabled={isLoading || !user}
               className="w-full rounded-full bg-[#2fa4d9] py-4 text-lg font-semibold text-white shadow-lg shadow-[#2fa4d9]/30 transition-all hover:bg-[#1e7fb6] disabled:cursor-not-allowed disabled:opacity-50"
             >

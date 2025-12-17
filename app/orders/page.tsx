@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -31,7 +31,6 @@ type ProfileRow = { id: string; full_name: string | null; email: string | null }
 export default function OrdersPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<OrderRow[]>([]);
-  const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [memberProfiles, setMemberProfiles] = useState<Record<string, ProfileRow>>({});
   const [loading, setLoading] = useState(true);
   const [cancelId, setCancelId] = useState<string | null>(null);
@@ -54,7 +53,6 @@ export default function OrdersPage() {
         .select("id, full_name, email, role")
         .eq("id", session.user.id)
         .single();
-      setProfile(prof as any);
 
       // Fetch orders
       const { data: orderRows, error: ordersError } = await supabase
@@ -161,8 +159,6 @@ export default function OrdersPage() {
       setCancelId(null);
     }
   };
-
-  const ordersById = useMemo(() => orders.reduce<Record<string, OrderRow>>((acc, o) => ((acc[o.id] = o), acc), {}), [orders]);
 
   if (loading) {
     return (

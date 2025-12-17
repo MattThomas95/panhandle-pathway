@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useMemo, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -14,12 +14,10 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [redirectPath, setRedirectPath] = useState("/dashboard");
-
-  useEffect(() => {
-    const requestedRedirect = searchParams?.get("redirectedFrom");
-    setRedirectPath(requestedRedirect || "/dashboard");
-  }, [searchParams]);
+  const redirectPath = useMemo(
+    () => searchParams?.get("redirectedFrom") || "/dashboard",
+    [searchParams]
+  );
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

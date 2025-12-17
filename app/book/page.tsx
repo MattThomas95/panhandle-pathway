@@ -1,6 +1,7 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect */
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -53,18 +54,7 @@ export default function BookPage() {
   const [infoNotice, setInfoNotice] = useState<string | null>(null);
   const [authRequired, setAuthRequired] = useState(false);
 
-  useEffect(() => {
-    checkUser();
-    fetchServices();
-  }, []);
-
-  useEffect(() => {
-    if (selectedService) {
-      fetchTimeSlots();
-    }
-  }, [selectedService]);
-
-  const fetchAllSlots = async () => {
+  const fetchAllSlots = useCallback(async () => {
     const { data, error } = await supabase.rpc("get_time_slots_with_availability", {
       p_service_id: null,
     });
@@ -84,9 +74,9 @@ export default function BookPage() {
       } as TimeSlot);
     });
     setTimeSlotsMap(grouped);
-  };
+  }, []);
 
-  const checkUser = async () => {
+  const checkUser = useCallback(async () => {
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -99,9 +89,9 @@ export default function BookPage() {
     setAuthRequired(false);
     setUser(session.user);
     setLoading(false);
-  };
+  }, []);
 
-  const fetchServices = async () => {
+  const fetchServices = useCallback(async () => {
     const { data, error } = await supabase
       .from("services")
       .select("*")
@@ -129,9 +119,9 @@ export default function BookPage() {
 
     // fetch all slots for all services
     await fetchAllSlots();
-  };
+  }, [fetchAllSlots]);
 
-  const fetchTimeSlots = async () => {
+  const fetchTimeSlots = useCallback(async () => {
     if (!selectedService) return;
 
     const { data, error } = await supabase.rpc("get_time_slots_with_availability", {
@@ -152,7 +142,18 @@ export default function BookPage() {
         })) as TimeSlot[];
       setTimeSlots(filtered);
     }
-  };
+  }, [selectedService]);
+
+  useEffect(() => {
+    checkUser();
+    fetchServices();
+  }, [checkUser, fetchServices]);
+
+  useEffect(() => {
+    if (selectedService) {
+      fetchTimeSlots();
+    }
+  }, [fetchTimeSlots, selectedService]);
 
   const handleSlotClick = (slot: TimeSlot) => {
     if (!user) {
@@ -299,17 +300,6 @@ export default function BookPage() {
     });
     setCartNotice("Booking added to cart. Proceed to checkout to pay.");
     setSelectedSlot(null);
-    setInfoNotice(null);
-  };
-
-  const selectFirstAvailableSlot = (serviceId: string) => {
-    const slots = timeSlotsMap[serviceId];
-    if (!slots || !slots.length) {
-      setInfoNotice("No available slots for this service.");
-      return;
-    }
-    setSelectedService(serviceId);
-    setSelectedSlot(slots[0]);
     setInfoNotice(null);
   };
 

@@ -18,49 +18,50 @@ type FeaturedProgram = {
 
 const highlights: ProgramHighlight[] = [
   {
-    title: "Child Development Associate (CDA)",
-    duration: "8-12 weeks",
-    format: "Online / Hybrid",
-    next: "Next cohort: April 15",
+    title: "National CDA — Infant/Toddler",
+    duration: "Instructor-led (Fri–Sun)",
+    format: "Live + supported online",
+    next: "First class: Jan 23–25",
     badge: "badge-gold",
     href: "/store",
   },
   {
-    title: "Director Certification",
-    duration: "6-10 weeks",
-    format: "Online / Hybrid",
-    next: "Next cohort: May 6",
-    badge: "badge-blue",
+    title: "National CDA — Preschool",
+    duration: "Instructor-led (Fri–Sun)",
+    format: "Live + supported online",
+    next: "First class: Jan 23–25",
+    badge: "badge-gold",
     href: "/store",
   },
   {
-    title: "Leadership Workshops",
-    duration: "1-2 days",
-    format: "Live virtual",
-    next: "Monthly sessions",
+    title: "Director Training",
+    duration: "Focused live cohort",
+    format: "Instructor-led only",
+    next: "Next start: Jan 23",
+    badge: "badge-blue",
     href: "/store",
   },
 ];
 
 const featuredPrograms: FeaturedProgram[] = [
   {
-    title: "CDA Program",
-    summary: "Build a career-ready portfolio with instructor-led support and flexible pacing for working educators.",
-    next: "Starts April 15",
+    title: "National CDA (Instructor-Led)",
+    summary: "Infant/Toddler, Preschool, and Birth–5 CDA tracks guided by real directors. Bring a can-do attitude and we’ll bring the coaching.",
+    next: "First class: Jan 23–25",
     highlights: [
-      "Weekly live coaching and feedback",
-      "Self-paced modules plus practicum guidance",
-      "Job placement support after completion",
+      "Live, instructor-led weekends (Fri–Sun)",
+      "Practicum guidance and portfolio support",
+      "Always instructor-supported (even online)",
     ],
   },
   {
     title: "Director Certification",
-    summary: "Prepare for leadership with operations, compliance, and team management training tailored to childcare directors.",
-    next: "Starts May 6",
+    summary: "Local, instructor-led training for owners and directors: operations, compliance, staffing, and growth.",
+    next: "Next start: Jan 23",
     highlights: [
-      "Handbook templates and compliance checklists",
-      "Financial stewardship and enrollment growth",
-      "Capstone project reviewed by directors",
+      "Lean, focused hours with director coaches",
+      "Compliance checklists and staffing playbooks",
+      "Designed for Florida Panhandle operators",
     ],
   },
 ];
@@ -82,28 +83,28 @@ function Hero() {
   return (
     <header className="hero">
       <div className="hero__text">
-        <span className="badge badge-blue">CDA & Director Programs</span>
-        <h1>Accelerate your childcare career with Panhandle Pathways</h1>
+        <span className="badge badge-blue">Panhandle Pathways Teacher Training Center LLC</span>
+        <h1>Instructor-led CDA & director training for local childcare teams</h1>
         <p>
-          Online and hybrid training, expert instructors, and flexible pacing built for working educators.
+          We’re Florida Panhandle educators helping infant, toddler, and preschool teachers level up. Live, instructor-led weekends only—bring a can-do attitude and get ready to learn.
         </p>
         <div className="hero__cta">
           <Link className="btn-primary" href="/book">
-            Browse programs
+            View classes
           </Link>
           <Link className="btn-gold" href="/book">
             Book a consult
           </Link>
         </div>
         <div className="hero__meta">
-          <span className="pill">Flexible pacing</span>
-          <span className="pill">Instructor-led</span>
-          <span className="pill">Job-ready portfolio</span>
+          <span className="pill">First class: Jan 23–25</span>
+          <span className="pill">Instructor-led only</span>
+          <span className="pill">Local & supported</span>
         </div>
       </div>
       <div className="hero__image">
         <div className="hero__image-placeholder">
-          <span>Drop your training photo here</span>
+          <span>Local, instructor-led weekends</span>
         </div>
       </div>
     </header>
@@ -115,8 +116,8 @@ function ProgramHighlights() {
     <section className="section">
       <div className="section__header">
         <p className="eyebrow">Programs</p>
-        <h2>Built for working educators</h2>
-        <p className="section__lede">Choose the path that fits your schedule and career goals.</p>
+        <h2>Built for infant, toddler, and preschool teachers</h2>
+        <p className="section__lede">Instructor-led, Florida Panhandle-based programs with supported online resources.</p>
       </div>
       <div className="grid-cards">
         {highlights.map((program) => (
@@ -211,7 +212,7 @@ function Testimonials() {
     <section className="card" style={{ margin: "48px 0" }}>
       <p className="eyebrow">Testimonials</p>
       <p className="quote">
-        "The CDA program fit my schedule and the mentors were incredible. I landed a director role two months after finishing."
+        &quot;The CDA program fit my schedule and the mentors were incredible. I landed a director role two months after finishing.&quot;
       </p>
       <div className="quote__meta">Ashley R., Program Graduate</div>
     </section>

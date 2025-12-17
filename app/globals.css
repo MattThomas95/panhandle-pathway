@@ -1,13 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --blue-primary: #1E7FB6;
-  --blue-accent: #2FA4D9;
-  --gold: #F2B705;
-  --gold-shadow: #F0A400;
-  --navy: #0E2F4A;
-  --sand: #F7F1E6;
-  --text: #1F2A32;
+  --blue-primary: #1e7fb6;
+  --blue-accent: #2fa4d9;
+  --gold: #f2b705;
+  --gold-shadow: #f0a400;
+  --navy: #0e2f4a;
+  --sand: #f1e7d7;
+  --text: #1f2a32;
   --background: var(--sand);
   --foreground: var(--text);
 }
@@ -50,6 +50,32 @@ a:hover {
   max-width: 1180px;
   margin: 0 auto;
   padding: 48px 24px 80px;
+}
+
+.dev-banner {
+  background: linear-gradient(90deg, rgba(30, 127, 182, 0.12), rgba(242, 183, 5, 0.16));
+  color: var(--navy);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(14, 47, 74, 0.08);
+}
+
+.dev-banner__pill {
+  background: #ffffff;
+  color: var(--navy);
+  border: 1px solid rgba(14, 47, 74, 0.12);
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.01em;
+}
+
+.dev-banner__text {
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .hero {

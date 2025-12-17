@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -28,17 +28,22 @@ type Organization = {
 export default function OrgPortalPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [members, setMembers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"members" | "settings" | "invite">("members");
 
-  useEffect(() => {
-    checkAccess();
+  const fetchMembers = useCallback(async (orgId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("organization_id", orgId)
+      .order("created_at", { ascending: false });
+
+    setMembers(data || []);
   }, []);
 
-  const checkAccess = async () => {
+  const checkAccess = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session) {
@@ -61,23 +66,17 @@ export default function OrgPortalPage() {
       return;
     }
 
-    setProfile(profileData);
     setOrganization(profileData.organizations);
 
     // Fetch organization members
     await fetchMembers(profileData.organization_id);
     setLoading(false);
-  };
+  }, [fetchMembers, router]);
 
-  const fetchMembers = async (orgId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("organization_id", orgId)
-      .order("created_at", { ascending: false });
-
-    setMembers(data || []);
-  };
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    checkAccess();
+  }, [checkAccess]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();

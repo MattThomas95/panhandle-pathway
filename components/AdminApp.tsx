@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -5,7 +6,6 @@ import { Admin, Resource, defaultTheme } from "react-admin";
 import { createTheme } from "@mui/material/styles";
 import { supabase as supabaseClient, supabaseJsClient } from "@/lib/supabase";
 import { Dashboard } from "./admin/Dashboard";
-import { RevenuePage } from "./admin/RevenuePage";
 import { ProductList } from "./admin/ProductList";
 import { ProductEdit } from "./admin/ProductEdit";
 import { ProductCreate } from "./admin/ProductCreate";

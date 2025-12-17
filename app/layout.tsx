@@ -28,9 +28,13 @@ const sourceSans = Source_Sans_3({
 });
 
 export const metadata: Metadata = {
-  title: "Panhandle Pathway",
-  description: "Books, services, and educational resources",
+  title: "Panhandle Pathways Teacher Training Center LLC",
+  description: "Instructor-led CDA and director training for Florida’s childcare educators.",
 };
+
+const maintenanceOn =
+  process.env.MAINTENANCE_MODE === "true" ||
+  process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
 
 export default function RootLayout({
   children,
@@ -43,7 +47,13 @@ export default function RootLayout({
         className={`${sourceSans.variable} ${playfair.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <CartProvider>
-          <SiteHeader />
+          <div className="dev-banner">
+            <div className="dev-banner__pill">Under Development</div>
+            <div className="dev-banner__text">
+              First instructor-led class planned for January 23–25. We’re polishing the experience now.
+            </div>
+          </div>
+          {!maintenanceOn && <SiteHeader />}
           <main className="site-main">{children}</main>
         </CartProvider>
       </body>

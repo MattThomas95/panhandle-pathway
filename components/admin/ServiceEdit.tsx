@@ -36,18 +36,12 @@ const TimeSlotGeneratorWithWatch = ({
   onGenerate: (slots: GeneratedSlot[]) => void;
 }) => {
   const form = useFormContext();
-
-  // Default to record value to avoid crashing when form context is unavailable
-  let isMultiDay = record?.is_multi_day || false;
-
-  if (form?.control) {
-    const watchedIsMultiDay = useWatch({
-      control: form.control,
-      name: "is_multi_day",
-      defaultValue: isMultiDay,
-    });
-    isMultiDay = (watchedIsMultiDay ?? isMultiDay) || false;
-  }
+  const watchedIsMultiDay = useWatch({
+    control: form?.control,
+    name: "is_multi_day",
+    defaultValue: record?.is_multi_day || false,
+  });
+  const isMultiDay = (watchedIsMultiDay ?? record?.is_multi_day ?? false) || false;
 
   return (
     <TimeSlotGenerator

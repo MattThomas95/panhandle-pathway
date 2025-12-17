@@ -55,7 +55,7 @@ export default function ForgotPasswordPage() {
               Check your email
             </h2>
             <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-              We've sent a password reset link to <strong>{email}</strong>.
+              We&apos;ve sent a password reset link to <strong>{email}</strong>.
             </p>
             <Link
               href="/auth/login"
@@ -76,7 +76,7 @@ export default function ForgotPasswordPage() {
           Reset Password
         </h1>
         <p className="mb-6 text-center text-sm text-zinc-600 dark:text-zinc-400">
-          Enter your email and we'll send you a reset link.
+          Enter your email and we&apos;ll send you a reset link.
         </p>
 
         <form onSubmit={handleResetPassword} className="space-y-4">
@@ -118,7 +118,7 @@ export default function ForgotPasswordPage() {
             href="/auth/login"
             className="block text-center text-sm text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white"
           >
-            ← Back to Sign In
+            Back to Sign In
           </Link>
         </div>
       </div>

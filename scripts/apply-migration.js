@@ -39,7 +39,7 @@ async function applyMigration() {
     console.log('');
 
     // Use admin API to execute raw SQL
-    const { data, error } = await supabase.rpc('exec', { sql }, { schema: 'extensions' });
+    const { error } = await supabase.rpc('exec', { sql }, { schema: 'extensions' });
 
     if (error) {
       // Try direct query execution via REST API

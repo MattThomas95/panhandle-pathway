@@ -3,6 +3,23 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+  const maintenanceOn =
+    process.env.MAINTENANCE_MODE === 'true' ||
+    process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true';
+
+  const maintenanceBypass = [
+    '/maintenance',
+    '/api/stripe/webhook',
+  ];
+
+  if (maintenanceOn && !maintenanceBypass.some((p) => pathname.startsWith(p))) {
+    const url = req.nextUrl.clone();
+    url.pathname = '/maintenance';
+    url.search = '';
+    return NextResponse.rewrite(url);
+  }
+
   let res = NextResponse.next({
     request: {
       headers: req.headers,
@@ -59,8 +76,6 @@ export async function middleware(req: NextRequest) {
   const {
     data: { session },
   } = await supabase.auth.getSession();
-
-  const { pathname } = req.nextUrl;
 
   // Define protected routes that require authentication
   const protectedRoutes = ['/dashboard', '/admin', '/org'];

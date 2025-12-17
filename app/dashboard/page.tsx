@@ -78,6 +78,7 @@ export default function DashboardPage() {
       mounted = false;
       listener.subscription.unsubscribe();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   const fetchBookings = async (userId?: string, mounted = true) => {

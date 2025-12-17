@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
 import { useCart } from "@/components/store/CartContext";
@@ -8,6 +9,8 @@ import { supabase } from "@/lib/supabase";
 
 const navLinks = [
   { label: "Home", href: "/" },
+  { label: "FAQ", href: "/faq" },
+  { label: "Contact", href: "/contact" },
   { label: "Store", href: "/store" },
   { label: "Book Training", href: "/book", variant: "accent" },
 ];
@@ -74,7 +77,7 @@ export function SiteHeader() {
           <div className="site-logo__mark">
             <img src="/panhandle-logo.png" alt="Panhandle Pathways" />
           </div>
-          {!isAdmin && <span>Panhandle Pathways</span>}
+          {!isAdmin && <span>Panhandle Pathways Teacher Training Center LLC</span>}
         </Link>
         {!isAdmin && (
           <nav className="site-nav" aria-label="Primary">
