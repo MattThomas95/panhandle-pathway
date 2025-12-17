@@ -47,12 +47,6 @@ export default function RootLayout({
         className={`${sourceSans.variable} ${playfair.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <CartProvider>
-          <div className="dev-banner">
-            <div className="dev-banner__pill">Under Development</div>
-            <div className="dev-banner__text">
-              First instructor-led class planned for January 23–25. We’re polishing the experience now.
-            </div>
-          </div>
           {!maintenanceOn && <SiteHeader />}
           <main className="site-main">{children}</main>
         </CartProvider>
