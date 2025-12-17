@@ -23,7 +23,7 @@ const highlights: ProgramHighlight[] = [
     format: "Live + supported online",
     next: "First class: Jan 23–25",
     badge: "badge-gold",
-    href: "/store",
+    href: "/cda",
   },
   {
     title: "National CDA — Preschool",
@@ -31,7 +31,7 @@ const highlights: ProgramHighlight[] = [
     format: "Live + supported online",
     next: "First class: Jan 23–25",
     badge: "badge-gold",
-    href: "/store",
+    href: "/cda",
   },
   {
     title: "Director Training",
@@ -39,7 +39,7 @@ const highlights: ProgramHighlight[] = [
     format: "Instructor-led only",
     next: "Next start: Jan 23",
     badge: "badge-blue",
-    href: "/store",
+    href: "/director-training",
   },
 ];
 
@@ -196,7 +196,7 @@ function FeaturedPrograms() {
             </ul>
             <div className="card__footer">
               <span className="badge badge-gold">{program.next}</span>
-              <Link className="link" href="/store">
+              <Link className="link" href={program.title.includes("Director") ? "/director-training" : "/cda"}>
                 View program
               </Link>
             </div>
