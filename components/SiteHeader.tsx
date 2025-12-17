@@ -9,8 +9,9 @@ import { supabase } from "@/lib/supabase";
 
 const navLinks = [
   { label: "Home", href: "/" },
-  { label: "CDA", href: "/cda" },
-  { label: "Director", href: "/director-training" },
+  { label: "Training", href: "/trainings" },
+  { label: "Make & Take", href: "/make-and-take" },
+  { label: "Why choose us", href: "/why-choose-us" },
   { label: "Store", href: "/store" },
   { label: "Book Training", href: "/book", variant: "accent" },
   { label: "FAQ", href: "/faq" },
