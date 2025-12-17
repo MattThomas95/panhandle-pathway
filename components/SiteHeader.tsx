@@ -8,7 +8,6 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 const navLinks = [
-  { label: "Home", href: "/" },
   { label: "Training", href: "/trainings" },
   { label: "Make & Take", href: "/make-and-take" },
   { label: "Why choose us", href: "/why-choose-us" },
