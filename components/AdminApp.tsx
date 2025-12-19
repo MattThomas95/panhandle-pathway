@@ -264,16 +264,8 @@ const createDataProvider = (client: any) => {
     },
 
     create: async (resource: string, params: any) => {
-      console.log(`Creating ${resource}`, params.data);
-
       // Get authenticated user from JWT token
       const { data: { user }, error: userError } = await client.auth.getUser();
-      console.log('CREATE DIAGNOSTIC:', {
-        hasUser: !!user,
-        userId: user?.id,
-        userEmail: user?.email,
-        userError: userError?.message
-      });
 
       if (!user) {
         throw new Error('Not authenticated - no user found');
@@ -283,22 +275,12 @@ const createDataProvider = (client: any) => {
       if (resource === "bundles") {
         const { service_ids, ...bundleData } = params.data;
 
-        console.log('Creating bundle with data:', { bundleData, service_ids });
-
         // Check user's profile role
         const { data: profile, error: profileError } = await client
           .from('profiles')
           .select('id, role')
           .eq('id', user.id)
           .single();
-
-        console.log('User profile check:', {
-          userId: user.id,
-          profile,
-          profileError,
-          hasProfile: !!profile,
-          role: profile?.role,
-        });
 
         if (profileError || !profile) {
           throw new Error('User profile not found. Please ensure your account has a profile.');
@@ -322,8 +304,6 @@ const createDataProvider = (client: any) => {
           is_active: bundleData.is_active !== false,
         };
 
-        console.log('Insert data:', insertData);
-
         // Create bundle
         const { data: bundle, error: bundleError } = await client
           .from('bundles')
@@ -331,16 +311,8 @@ const createDataProvider = (client: any) => {
           .select()
           .single();
 
-        console.log('Bundle creation result:', { bundle, bundleError });
-
         if (bundleError) {
-          console.error('Error creating bundle:', {
-            error: bundleError,
-            message: bundleError.message,
-            details: bundleError.details,
-            hint: bundleError.hint,
-            code: bundleError.code,
-          });
+          console.error('Error creating bundle:', bundleError.message);
           throw new Error(bundleError.message || 'Failed to create bundle');
         }
 

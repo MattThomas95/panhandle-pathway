@@ -1,0 +1,42 @@
+# Bundle System Implementation - Session Context
+
+## What We Built
+Service bundle/combo system allowing admins to create multi-service packages (e.g., "CDA + Director Training") with custom pricing and late fees.
+
+## Admin Page Work
+- Created Bundle management UI in React Admin
+- BundleList: Shows all bundles with services
+- BundleCreate/Edit: Form with ServiceSelector (multi-select dropdown)
+- SliderInput: Custom slider for late fees and time rules
+- Fixed infinite loop in ServiceSelector (removed problematic useEffect)
+
+## Key Issues Resolved
+1. **401 Unauthorized errors**: Changed from API routes to direct Supabase queries in AdminApp.tsx data provider
+2. **Permission denied**: Created migration to set first user as admin (20251217000008)
+3. **ServiceSelector infinite loop**: Fixed by calling field.onChange directly in handlers instead of useEffect
+
+## Database Schema
+- `bundles`: Template definitions (name, price, late_fee_days, late_fee_amount)
+- `bundle_services`: Junction table (bundle_id, service_id)
+- `bundle_bookings`: Tracks purchases (bundle_id, user_id, slot_id, total_price, late_fee)
+- Modified `bookings`: Added bundle_booking_id column
+
+## Files Modified
+- components/AdminApp.tsx - Direct Supabase queries for bundles CRUD
+- components/admin/ServiceSelector.tsx - Fixed infinite loop
+- components/store/CartContext.tsx - Added bundle cart item types
+- app/api/stripe/checkout/route.ts - Bundle payment processing
+- app/api/stripe/webhook/route.ts - Bundle confirmation on payment
+
+## Current Status
+- ✅ All code committed and pushed to GitHub
+- ✅ Deployed to Vercel production
+- ✅ Database migrations applied
+- ✅ Admin role set for first user
+- ⏸️ User testing bundle creation (waiting for user to try)
+
+## Next Session Reminder
+When user says "Hey, what were we working on the admin page again?":
+- We implemented the bundle system with admin UI
+- Fixed authentication/permission errors
+- User should test creating a bundle in /admin
