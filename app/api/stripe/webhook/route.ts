@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     ) => {
       const { data: bookingsToCancel, error: fetchError } = await supabase
         .from("bookings")
-        .select("id, slot_id, order_id")
+        .select("id, slot_id, order_id, bundle_booking_id")
         .or(orderId ? `order_id.eq.${orderId},notes.ilike.%${sessionId}%` : `notes.ilike.%${sessionId}%`);
 
       if (fetchError) {
@@ -67,6 +67,22 @@ export async function POST(req: NextRequest) {
 
       if (bookingUpdateError) {
         console.error("Failed to update booking statuses:", bookingUpdateError);
+      }
+
+      // Also cancel any bundle bookings
+      const bundleBookingIds = bookingsToCancel
+        .filter((b) => b.bundle_booking_id)
+        .map((b) => b.bundle_booking_id);
+
+      if (bundleBookingIds.length > 0) {
+        const { error: bundleUpdateError } = await supabase
+          .from("bundle_bookings")
+          .update({ status: "cancelled" })
+          .in("id", bundleBookingIds);
+
+        if (bundleUpdateError) {
+          console.error("Failed to update bundle booking statuses:", bundleUpdateError);
+        }
       }
 
       // Restore slot counts
@@ -266,6 +282,59 @@ export async function POST(req: NextRequest) {
             }
           } catch (err) {
             console.error("Failed to parse bookingItems metadata:", err);
+          }
+        }
+
+        // Handle bundle items (if any) passed via metadata.bundleItems
+        const bundleItemsRaw = session.metadata?.bundleItems;
+        if (bundleItemsRaw && userId) {
+          try {
+            const bundleItems = JSON.parse(bundleItemsRaw as string) as Array<{
+              bundleId: string | null;
+              bundleBookingId: string | null;
+              slotId: string | null;
+              startTime?: string | null;
+              endTime?: string | null;
+              price: number;
+              lateFee: number;
+              quantity: number;
+              name?: string;
+              includedServices: Array<{ serviceId: string; serviceName: string }>;
+            }>;
+
+            if (bundleItems.length) {
+              for (const b of bundleItems) {
+                if (!b.bundleBookingId) {
+                  console.error("No bundle booking ID provided for bundle item");
+                  continue;
+                }
+
+                // Update bundle booking status to confirmed
+                const { error: updateBundleError } = await supabase
+                  .from("bundle_bookings")
+                  .update({ status: "confirmed" })
+                  .eq("id", b.bundleBookingId);
+
+                if (updateBundleError) {
+                  console.error("Failed to confirm bundle booking:", updateBundleError);
+                  continue;
+                }
+
+                // Update all associated service bookings to confirmed
+                const { error: updateBookingsError } = await supabase
+                  .from("bookings")
+                  .update({ status: "confirmed" })
+                  .eq("bundle_booking_id", b.bundleBookingId);
+
+                if (updateBookingsError) {
+                  console.error("Failed to confirm bundle service bookings:", updateBookingsError);
+                } else {
+                  console.log(`Confirmed bundle booking ${b.bundleBookingId} and all service bookings`);
+                }
+              }
+            }
+          } catch (err) {
+            console.error("Failed to parse bundleItems metadata:", err);
           }
         }
 

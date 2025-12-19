@@ -23,6 +23,11 @@ type Service = {
   duration: number;
   capacity: number;
   price: number;
+  service_kind?: "training" | "consultation";
+  registration_cutoff_days?: number | null;
+  late_fee_days?: number | null;
+  late_fee_amount?: number | null;
+  time_limit_minutes?: number | null;
 };
 
 type TimeSlot = {
@@ -40,6 +45,7 @@ export default function BookPage() {
   const { addItem } = useCart();
   const [user, setUser] = useState<any>(null);
   const [services, setServices] = useState<Service[]>([]);
+  const [allSlots, setAllSlots] = useState<TimeSlot[]>([]);
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [timeSlotsMap, setTimeSlotsMap] = useState<Record<string, TimeSlot[]>>({});
@@ -51,8 +57,27 @@ export default function BookPage() {
   const [success, setSuccess] = useState(false);
   const [cartNotice, setCartNotice] = useState<string | null>(null);
   const [lastBookedService, setLastBookedService] = useState<Service | null>(null);
+  const [lastLateFee, setLastLateFee] = useState<number>(0);
   const [infoNotice, setInfoNotice] = useState<string | null>(null);
   const [authRequired, setAuthRequired] = useState(false);
+
+  const getServiceRules = (svc?: Service | null) => {
+    const kind = svc?.service_kind ?? "training";
+    const cutoff = kind === "consultation" ? svc?.registration_cutoff_days ?? 0 : 0;
+    const feeDays = svc?.late_fee_days ?? 7;
+    const feeAmount = svc?.late_fee_amount ?? 25;
+    return { kind, cutoff, feeDays, feeAmount };
+  };
+
+  const daysUntil = (iso: string) => {
+    const now = new Date();
+    const target = new Date(iso);
+    const diffMs = target.getTime() - now.getTime();
+    return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  };
+  const isLate = (iso: string, svc?: Service | null) => daysUntil(iso) < getServiceRules(svc).feeDays;
+  const getLateFee = (iso: string, svc?: Service | null) =>
+    isLate(iso, svc) ? getServiceRules(svc).feeAmount : 0;
 
   const fetchAllSlots = useCallback(async () => {
     const { data, error } = await supabase.rpc("get_time_slots_with_availability", {
@@ -65,15 +90,26 @@ export default function BookPage() {
     }
 
     const grouped: Record<string, TimeSlot[]> = {};
-    (data || []).forEach((slot: any) => {
-      grouped[slot.service_id] = grouped[slot.service_id] || [];
-      grouped[slot.service_id].push({
+    const normalizeSlot = (slot: any) =>
+      ({
         ...slot,
         booked_count: slot.booked_count ?? 0,
         is_available: slot.is_available ?? true,
-      } as TimeSlot);
+      }) as TimeSlot;
+
+    const upcoming = (data || [])
+      .map(normalizeSlot)
+      .filter((slot: TimeSlot) => new Date(slot.start_time) >= new Date())
+      .sort((a: TimeSlot, b: TimeSlot) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+
+    upcoming.forEach((slot: TimeSlot) => {
+      grouped[slot.service_id] = grouped[slot.service_id] || [];
+      grouped[slot.service_id].push(slot);
     });
+
     setTimeSlotsMap(grouped);
+    setAllSlots(upcoming);
+    setTimeSlots(upcoming);
   }, []);
 
   const checkUser = useCallback(async () => {
@@ -114,35 +150,11 @@ export default function BookPage() {
     }
 
     setServices(data);
-    setSelectedService(data[0].id);
+    setSelectedService(null);
     setError(null);
 
-    // fetch all slots for all services
     await fetchAllSlots();
   }, [fetchAllSlots]);
-
-  const fetchTimeSlots = useCallback(async () => {
-    if (!selectedService) return;
-
-    const { data, error } = await supabase.rpc("get_time_slots_with_availability", {
-      p_service_id: selectedService,
-    });
-
-    if (error) {
-      console.error("Error fetching time slots:", error);
-      setError(error.message || "Unable to load time slots. Please try again.");
-    } else {
-      const filtered = (data || [])
-        .filter((slot: any) => new Date(slot.start_time) >= new Date())
-        .sort((a: any, b: any) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
-        .map((slot: any) => ({
-          ...slot,
-          booked_count: slot.booked_count ?? 0,
-          is_available: slot.is_available ?? true,
-        })) as TimeSlot[];
-      setTimeSlots(filtered);
-    }
-  }, [selectedService]);
 
   useEffect(() => {
     checkUser();
@@ -150,14 +162,27 @@ export default function BookPage() {
   }, [checkUser, fetchServices]);
 
   useEffect(() => {
-    if (selectedService) {
-      fetchTimeSlots();
+    if (!selectedService) {
+      setTimeSlots(allSlots);
+      return;
     }
-  }, [fetchTimeSlots, selectedService]);
+    const slots = timeSlotsMap[selectedService] || [];
+    setTimeSlots(slots);
+  }, [allSlots, selectedService, timeSlotsMap]);
 
   const handleSlotClick = (slot: TimeSlot) => {
     if (!user) {
       router.push(`/auth/login?redirectedFrom=/book`);
+      return;
+    }
+    if (!selectedService) {
+      setSelectedService(slot.service_id);
+    }
+    const svc = services.find((s) => s.id === (selectedService ?? slot.service_id));
+    const { cutoff } = getServiceRules(svc);
+    if (cutoff > 0 && daysUntil(slot.start_time) < cutoff) {
+      setInfoNotice(`Registration must be completed at least ${cutoff} days in advance.`);
+      setSelectedSlot(null);
       return;
     }
     const available = slot.capacity - slot.booked_count;
@@ -179,7 +204,6 @@ export default function BookPage() {
     setBookingLoading(true);
     setError(null);
 
-    // Prevent duplicate bookings for the same user/slot
     const { data: existingBooking, error: existingCheckError } = await supabase
       .from("bookings")
       .select("id,status")
@@ -200,13 +224,17 @@ export default function BookPage() {
       return;
     }
 
-    const { data: newBooking, error: bookingError } = await supabase.from("bookings").insert({
-      user_id: user.id,
-      service_id: selectedService,
-      slot_id: selectedSlot.id,
-      status: "confirmed",
-      notes: notes || null,
-    }).select().single();
+    const { data: newBooking, error: bookingError } = await supabase
+      .from("bookings")
+      .insert({
+        user_id: user.id,
+        service_id: selectedService,
+        slot_id: selectedSlot.id,
+        status: "confirmed",
+        notes: notes || null,
+      })
+      .select()
+      .single();
 
     if (bookingError) {
       if ((bookingError as any)?.code === "23505") {
@@ -219,7 +247,6 @@ export default function BookPage() {
       setSuccess(true);
       const svc = services.find((s) => s.id === selectedService);
       const slotForCart = selectedSlot;
-      // Increment slot booked_count and availability
       try {
         const { data: slotRow } = await supabase
           .from("time_slots")
@@ -227,7 +254,7 @@ export default function BookPage() {
           .eq("id", selectedSlot.id)
           .single();
         if (slotRow) {
-          const newCount = Math.min((slotRow.capacity ?? 0), (slotRow.booked_count ?? 0) + 1);
+          const newCount = Math.min(slotRow.capacity ?? 0, (slotRow.booked_count ?? 0) + 1);
           const isAvailable = newCount < (slotRow.capacity ?? 0);
           await supabase
             .from("time_slots")
@@ -238,13 +265,14 @@ export default function BookPage() {
         console.error("Failed to update slot count after booking:", err);
       }
 
-      setLastBookedService(svc || null);
-      // Add the booking to cart so checkout has the line item
       if (svc && slotForCart) {
+        const svcRules = getServiceRules(svc);
+        const lateFee = getLateFee(slotForCart.start_time, svc);
+        setLastLateFee(lateFee);
         addItem({
           productId: `booking-${slotForCart.id}`,
           productName: `${svc.name} (${new Date(slotForCart.start_time).toLocaleDateString()})`,
-          price: svc.price,
+          price: svc.price + lateFee,
           imageUrl: null,
           quantity: 1,
           kind: "booking",
@@ -257,10 +285,8 @@ export default function BookPage() {
       }
       setSelectedSlot(null);
       setNotes("");
-      fetchTimeSlots();
       setBookingLoading(false);
 
-      // Send confirmation email (don't block on this)
       if (newBooking?.id) {
         fetch("/api/bookings/send-confirmation", {
           method: "POST",
@@ -284,12 +310,14 @@ export default function BookPage() {
       setInfoNotice("Select a service and time slot first.");
       return;
     }
+    const svcRules = getServiceRules(selectedServiceData);
     const available = selectedSlot.capacity - selectedSlot.booked_count;
     if (available <= 0) return;
+    const lateFee = getLateFee(selectedSlot.start_time, selectedServiceData);
     addItem({
       productId: `booking-${selectedSlot.id}`,
       productName: `${selectedServiceData.name} (${new Date(selectedSlot.start_time).toLocaleDateString()})`,
-      price: selectedServiceData.price,
+      price: selectedServiceData.price + lateFee,
       imageUrl: null,
       quantity: 1,
       kind: "booking",
@@ -298,7 +326,11 @@ export default function BookPage() {
       startTime: selectedSlot.start_time,
       endTime: selectedSlot.end_time,
     });
-    setCartNotice("Booking added to cart. Proceed to checkout to pay.");
+    setCartNotice(
+      lateFee > 0
+        ? `Booking added to cart with a $${lateFee.toFixed(2)} late fee (within ${svcRules.feeDays} days). Proceed to checkout.`
+        : "Booking added to cart. Proceed to checkout to pay."
+    );
     setSelectedSlot(null);
     setInfoNotice(null);
   };
@@ -329,7 +361,7 @@ export default function BookPage() {
         backgroundColor: isFull ? "#ef4444" : "#10b981",
         borderColor: isFull ? "#dc2626" : "#059669",
         textColor: "#ffffff",
-        display: 'block',
+        display: "block",
       };
     });
   };
@@ -362,8 +394,7 @@ export default function BookPage() {
   }
 
   const selectedServiceData = services.find((s) => s.id === selectedService);
-  const selectedAvailability =
-    selectedSlot ? Math.max(0, selectedSlot.capacity - selectedSlot.booked_count) : null;
+  const selectedAvailability = selectedSlot ? Math.max(0, selectedSlot.capacity - selectedSlot.booked_count) : null;
 
   return (
     <main className="page">
@@ -394,7 +425,7 @@ export default function BookPage() {
           {lastBookedService ? (
             <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
               <Link className="btn-primary" href="/checkout">
-                Pay for booking (${lastBookedService.price})
+                Pay for booking (${(lastBookedService.price + lastLateFee).toFixed(2)})
               </Link>
               <Link className="btn-ghost" href="/dashboard">
                 View bookings
@@ -431,21 +462,30 @@ export default function BookPage() {
       )}
 
       <div className="grid-cards" style={{ alignItems: "start" }}>
-        <div className="card" style={{ gridColumn: "span 1" }}>
+        <div
+          className="card"
+          style={{
+            gridColumn: "span 1",
+            background: "linear-gradient(135deg, rgba(46,163,217,0.08), rgba(242,183,5,0.06))",
+          }}
+        >
           <h2>Services</h2>
           <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
             {services.map((service) => (
               <div
                 key={service.id}
                 onClick={() => {
-                  setSelectedService(service.id);
+                  setSelectedService((prev) => (prev === service.id ? null : service.id));
                   setSelectedSlot(null);
                   setCartNotice(null);
                 }}
                 className="card card--bordered"
                 style={{
                   textAlign: "left",
-                  background: selectedService === service.id ? "#eef7fb" : "#fff",
+                  background:
+                    selectedService === service.id
+                      ? "linear-gradient(135deg, rgba(46,163,217,0.15), rgba(242,183,5,0.12))"
+                      : "linear-gradient(135deg, rgba(46,163,217,0.05), rgba(242,183,5,0.05))",
                   borderColor: selectedService === service.id ? "var(--blue-primary)" : "rgba(14,47,74,0.12)",
                   boxShadow: selectedService === service.id ? "0 10px 24px rgba(30,127,182,0.14)" : "0 12px 28px rgba(0,0,0,0.05)",
                   cursor: "pointer",
@@ -465,7 +505,8 @@ export default function BookPage() {
                 <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   {timeSlotsMap[service.id] && timeSlotsMap[service.id].length ? (
                     <span className="section__lede">
-                      {timeSlotsMap[service.id].length} available slot{timeSlotsMap[service.id].length !== 1 ? 's' : ''} · Next: {new Date(timeSlotsMap[service.id][0].start_time).toLocaleDateString()}
+                      {timeSlotsMap[service.id].length} available slot{timeSlotsMap[service.id].length !== 1 ? "s" : ""} - Next:{" "}
+                      {new Date(timeSlotsMap[service.id][0].start_time).toLocaleDateString()}
                     </span>
                   ) : (
                     <span className="section__lede" style={{ color: "#9ca3af" }}>
@@ -476,15 +517,15 @@ export default function BookPage() {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedService(service.id);
+                      setSelectedService((prev) => (prev === service.id ? null : service.id));
                       setSelectedSlot(null);
                       setCartNotice(null);
                       setInfoNotice(null);
                     }}
-                    className="btn-ghost"
-                    style={{ padding: "6px 10px" }}
+                    className="btn-gold"
+                    style={{ padding: "8px 12px", boxShadow: "0 10px 20px rgba(240,164,0,0.22)", color: "#1f2a32" }}
                   >
-                    Select
+                    {selectedService === service.id ? "Show all" : "Select"}
                   </button>
                 </div>
               </div>
@@ -492,7 +533,10 @@ export default function BookPage() {
           </div>
 
           {selectedServiceData && (
-            <div className="card" style={{ marginTop: 16, background: "#fffdf7" }}>
+            <div
+              className="card"
+              style={{ marginTop: 16, background: "linear-gradient(135deg, rgba(242,183,5,0.08), #fffdf7)" }}
+            >
               <h3>{selectedServiceData.name}</h3>
               <p className="section__lede" style={{ marginTop: 4 }}>
                 {selectedServiceData.description}
@@ -517,7 +561,13 @@ export default function BookPage() {
           )}
         </div>
 
-        <div className="card" style={{ gridColumn: "span 2" }}>
+        <div
+          className="card"
+          style={{
+            gridColumn: "span 2",
+            background: "linear-gradient(135deg, rgba(46,163,217,0.06), rgba(242,183,5,0.05))",
+          }}
+        >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
             <h2>Available time slots</h2>
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
@@ -532,16 +582,20 @@ export default function BookPage() {
               <span className="badge badge-blue">Local time</span>
             </div>
           </div>
-          <div style={{
-            '--fc-border-color': '#e5e7eb',
-            '--fc-button-bg-color': '#2FA4D9',
-            '--fc-button-border-color': '#1E7FB6',
-            '--fc-button-hover-bg-color': '#1E7FB6',
-            '--fc-button-hover-border-color': '#1E7FB6',
-            '--fc-button-active-bg-color': '#1E7FB6',
-            '--fc-button-active-border-color': '#1E7FB6',
-            '--fc-today-bg-color': '#fef3c7',
-          } as React.CSSProperties}>
+          <div
+            style={
+              {
+                "--fc-border-color": "#e5e7eb",
+                "--fc-button-bg-color": "#2FA4D9",
+                "--fc-button-border-color": "#1E7FB6",
+                "--fc-button-hover-bg-color": "#1E7FB6",
+                "--fc-button-hover-border-color": "#1E7FB6",
+                "--fc-button-active-bg-color": "#1E7FB6",
+                "--fc-button-active-border-color": "#1E7FB6",
+                "--fc-today-bg-color": "#fef3c7",
+              } as React.CSSProperties
+            }
+          >
             <FullCalendar
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
@@ -589,7 +643,6 @@ export default function BookPage() {
                   const startDateStr = startDate.toLocaleDateString();
                   const endDateStr = endDate.toLocaleDateString();
 
-                  // Check if start and end are on different dates
                   if (startDateStr !== endDateStr) {
                     return `${startDateStr} - ${endDateStr}`;
                   }
@@ -605,6 +658,16 @@ export default function BookPage() {
               </li>
               <li>
                 <strong>Price:</strong> ${selectedServiceData?.price}
+              </li>
+              <li>
+                <strong>Late fee:</strong>{" "}
+                {getLateFee(selectedSlot.start_time, selectedServiceData) > 0
+                  ? `$${getLateFee(selectedSlot.start_time, selectedServiceData)}`
+                  : "$0.00"}
+              </li>
+              <li>
+                <strong>Total:</strong>{" "}
+                ${(selectedServiceData?.price + getLateFee(selectedSlot.start_time, selectedServiceData)).toFixed(2)}
               </li>
             </div>
 

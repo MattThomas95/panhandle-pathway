@@ -8,12 +8,17 @@ export type CartItem = {
   price: number;
   quantity: number;
   imageUrl: string | null;
-  kind?: "product" | "booking";
+  kind?: "product" | "booking" | "bundle";
   serviceId?: string;
   slotId?: string;
   startTime?: string;
   endTime?: string;
   bookingId?: string;
+  // Bundle-specific fields
+  bundleId?: string;
+  bundleBookingId?: string;
+  includedServices?: Array<{ serviceId: string; serviceName: string }>;
+  lateFee?: number;
 };
 
 type CartContextType = {

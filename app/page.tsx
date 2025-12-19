@@ -18,18 +18,18 @@ type FeaturedProgram = {
 
 const highlights: ProgramHighlight[] = [
   {
-    title: "National CDA — Infant/Toddler",
-    duration: "Instructor-led (Fri–Sun)",
+    title: "National CDA - Infant/Toddler",
+    duration: "Instructor-led (Fri-Sun)",
     format: "Live + supported online",
-    next: "First class: Jan 23–25",
+    next: "First class: Jan 23-25",
     badge: "badge-gold",
     href: "/cda",
   },
   {
-    title: "National CDA — Preschool",
-    duration: "Instructor-led (Fri–Sun)",
+    title: "National CDA - Preschool",
+    duration: "Instructor-led (Fri-Sun)",
     format: "Live + supported online",
-    next: "First class: Jan 23–25",
+    next: "First class: Jan 23-25",
     badge: "badge-gold",
     href: "/cda",
   },
@@ -45,18 +45,20 @@ const highlights: ProgramHighlight[] = [
 
 const featuredPrograms: FeaturedProgram[] = [
   {
-    title: "National CDA (Instructor-Led)",
-    summary: "Infant/Toddler, Preschool, and Birth–5 CDA tracks guided by real directors. Bring a can-do attitude and we’ll bring the coaching.",
-    next: "First class: Jan 23–25",
+    title: "National CDA (Instructor-led)",
+    summary:
+      "Infant/Toddler, Preschool, and Birth-5 CDA tracks guided by real directors. Bring a can-do attitude; we'll bring the coaching and accountability.",
+    next: "First class: Jan 23-25",
     highlights: [
-      "Live, instructor-led weekends (Fri–Sun)",
+      "Live, instructor-led weekends (Fri-Sun)",
       "Practicum guidance and portfolio support",
-      "Always instructor-supported (even online)",
+      "Always instructor-supported, never self-paced",
     ],
   },
   {
     title: "Director Certification",
-    summary: "Local, instructor-led training for owners and directors: operations, compliance, staffing, and growth.",
+    summary:
+      "Local, instructor-led training for owners and directors: operations, compliance, staffing, and growth tailored to Florida Panhandle centers.",
     next: "Next start: Jan 23",
     highlights: [
       "Lean, focused hours with director coaches",
@@ -66,14 +68,21 @@ const featuredPrograms: FeaturedProgram[] = [
   },
 ];
 
+const stats = [
+  { label: "Instructor-led", value: "100%" },
+  { label: "First cohort", value: "Jan 23-25" },
+  { label: "Region", value: "Florida Panhandle" },
+];
+
 export default function Home() {
   return (
     <main className="page">
       <Hero />
+      <StatBar />
+      <Mission />
       <ProgramHighlights />
       <WhyUs />
       <FeaturedPrograms />
-      <Testimonials />
       <CtaBand />
     </main>
   );
@@ -81,33 +90,79 @@ export default function Home() {
 
 function Hero() {
   return (
-    <header className="hero">
+    <header className="hero hero--modern">
       <div className="hero__text">
         <span className="badge badge-blue">Panhandle Pathways Teacher Training Center LLC</span>
-        <h1>Instructor-led CDA & director training for local childcare teams</h1>
+        <h1>Childcare training built for infant, toddler, and preschool teams</h1>
         <p>
-          We’re Florida Panhandle educators helping infant, toddler, and preschool teachers level up. Live, instructor-led weekends only—bring a can-do attitude and get ready to learn.
+          Live, instructor-led weekends only - no self-paced. We're Florida Panhandle educators getting teachers and directors ready for the classroom with supported online resources.
         </p>
         <div className="hero__cta">
-          <Link className="btn-primary" href="/book">
-            View classes
+          <Link className="btn-primary" href="/trainings">
+            View trainings
           </Link>
           <Link className="btn-gold" href="/book">
             Book a consult
           </Link>
         </div>
         <div className="hero__meta">
-          <span className="pill">First class: Jan 23–25</span>
+          <span className="pill">First class: Jan 23-25</span>
           <span className="pill">Instructor-led only</span>
           <span className="pill">Local & supported</span>
         </div>
       </div>
-      <div className="hero__image">
-        <div className="hero__image-placeholder">
-          <span>Local, instructor-led weekends</span>
+      <div className="hero__card">
+        <div className="hero__card-header">
+          <div>
+            <p className="eyebrow eyebrow-light">Live cohorts</p>
+            <h3>Instructor-led weekends</h3>
+          </div>
+          <span className="badge badge-gold">Jan 23-25</span>
+        </div>
+        <ul className="hero__list">
+          <li>Bring a can-do attitude - our instructors bring the structure.</li>
+          <li>Friday-Sunday cadence with guided online support between sessions.</li>
+          <li>Tracks for Infant/Toddler, Preschool CDA, and Director Training.</li>
+          <li>Local team that knows Panhandle classrooms and regulations.</li>
+        </ul>
+        <div className="hero__card-footer">
+          <div>
+            <p className="eyebrow eyebrow-light">Next up</p>
+            <strong>Reserve your spot for Jan 23-25</strong>
+          </div>
+          <Link className="btn-primary" href="/book">
+            Book training
+          </Link>
         </div>
       </div>
     </header>
+  );
+}
+
+function StatBar() {
+  return (
+    <section className="stat-bar">
+      {stats.map((stat) => (
+        <div key={stat.label} className="stat-bar__item">
+          <div className="stat-bar__value">{stat.value}</div>
+          <div className="stat-bar__label">{stat.label}</div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function Mission() {
+  return (
+    <section className="section">
+      <div className="section__header">
+        <p className="eyebrow">Mission</p>
+        <h2>Preparing the future of child development professionals</h2>
+        <p className="section__lede">
+          We are led by veteran early-childhood educators and directors who have built and run programs across the Florida Panhandle. Our mission is to train the next wave of infant, toddler, preschool, and director talent with structured, instructor-led cohorts and real-world coaching.
+        </p>
+      </div>
+    </section>
   );
 }
 
@@ -121,18 +176,23 @@ function ProgramHighlights() {
       </div>
       <div className="grid-cards">
         {highlights.map((program) => (
-          <article className="card" key={program.title}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <article className="card card--program" key={program.title}>
+            <div className="card__head">
               <h3>{program.title}</h3>
               {program.badge ? <span className={`badge ${program.badge}`}>Featured</span> : null}
             </div>
-            <p>
-              {program.duration} | {program.format}
+            <p className="card__meta">
+              {program.duration} - {program.format}
             </p>
-            <p style={{ color: "var(--blue-primary)", fontWeight: 600 }}>{program.next}</p>
-            <Link className="btn-primary" href="/book">
-              View details
-            </Link>
+            <p className="card__next">{program.next}</p>
+            <div className="card__footer">
+              <Link className="btn-primary" href={program.href}>
+                View details
+              </Link>
+              <Link className="link" href="/book">
+                Book now
+              </Link>
+            </div>
           </article>
         ))}
       </div>
@@ -143,16 +203,16 @@ function ProgramHighlights() {
 function WhyUs() {
   const reasons = [
     {
-      title: "Flexible pacing",
-      body: "Self-paced modules with weekly live check-ins so you never lose momentum.",
+      title: "Instructor-led only",
+      body: "Live weekends with instructor support between sessions - no self-paced drift.",
     },
     {
-      title: "Expert instructors",
-      body: "Certified childcare directors and CDA specialists guide every cohort.",
+      title: "Panhandle-specific",
+      body: "Built by local directors who know Florida requirements and childcare realities.",
     },
     {
-      title: "Career outcomes",
-      body: "Job placement support, interview prep, and director-readiness portfolio reviews.",
+      title: "Career-focused",
+      body: "Portfolio guidance, compliance checklists, and director-readiness coaching.",
     },
   ];
 
@@ -160,14 +220,14 @@ function WhyUs() {
     <section className="section-band">
       <div className="section__header">
         <p className="eyebrow eyebrow-light">Why us</p>
-        <h2>Training with outcomes</h2>
+        <h2>Training that matches the way you work</h2>
         <p className="section__lede">
-          Practical, supported learning so you can advance without pausing your career.
+          Practical, supported learning - bring your energy, we'll bring the structure, instructors, and accountability.
         </p>
       </div>
       <div className="grid-cards">
         {reasons.map((reason) => (
-          <article className="card" key={reason.title}>
+          <article className="card card--frosted" key={reason.title}>
             <h3>{reason.title}</h3>
             <p>{reason.body}</p>
           </article>
@@ -182,9 +242,9 @@ function FeaturedPrograms() {
     <section className="section">
       <div className="section__header">
         <p className="eyebrow">In depth</p>
-        <h2>Featured programs</h2>
+        <h2>Training tracks</h2>
       </div>
-      <div className="grid-cards">
+      <div className="grid-cards grid-cards--wide">
         {featuredPrograms.map((program) => (
           <article className="card card--bordered" key={program.title}>
             <h3>{program.title}</h3>
@@ -207,30 +267,23 @@ function FeaturedPrograms() {
   );
 }
 
-function Testimonials() {
-  return (
-    <section className="card" style={{ margin: "48px 0" }}>
-      <p className="eyebrow">Testimonials</p>
-      <p className="quote">
-        &quot;The CDA program fit my schedule and the mentors were incredible. I landed a director role two months after finishing.&quot;
-      </p>
-      <div className="quote__meta">Ashley R., Program Graduate</div>
-    </section>
-  );
-}
-
 function CtaBand() {
   return (
-    <section className="section-band" style={{ textAlign: "center" }}>
-      <h2>Ready to start?</h2>
-      <p style={{ marginBottom: 18 }}>Book a consult or enroll in the next cohort.</p>
-      <div style={{ display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
-        <Link className="btn-gold" href="/book">
-          Book a consult
-        </Link>
-        <Link className="btn-primary" href="/book">
-          Browse programs
-        </Link>
+    <section className="section-band section-band--cta">
+      <div className="cta">
+        <div>
+          <p className="eyebrow eyebrow-light">Ready for the first cohort?</p>
+          <h2>Reserve Jan 23-25 and train with us</h2>
+          <p>Instructor-led weekends only. We'll follow up with details and prep lists.</p>
+        </div>
+        <div className="cta__actions">
+          <Link className="btn-gold" href="/book">
+            Book a consult
+          </Link>
+          <Link className="btn-primary" href="/trainings">
+            Browse trainings
+          </Link>
+        </div>
       </div>
     </section>
   );

@@ -34,8 +34,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Split items by kind
-    const productItems = items.filter((item: any) => item.kind !== "booking");
+    const productItems = items.filter((item: any) => item.kind !== "booking" && item.kind !== "bundle");
     const bookingItems = items.filter((item: any) => item.kind === "booking");
+    const bundleItems = items.filter((item: any) => item.kind === "bundle");
 
     // Fetch product details for product items
     const productIds = productItems.map((item: any) => item.productId);
@@ -79,6 +80,27 @@ export async function POST(req: NextRequest) {
             description: item.startTime
               ? `Booking on ${new Date(item.startTime).toLocaleDateString()} at ${new Date(item.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
               : undefined,
+          },
+          unit_amount: Math.round(item.price * 100),
+        },
+        quantity: item.quantity,
+      });
+    }
+
+    // Map bundle items using cart price
+    for (const item of bundleItems) {
+      const servicesDesc = item.includedServices
+        ? item.includedServices.map((s: any) => s.serviceName).join(", ")
+        : "Multiple services";
+
+      lineItems.push({
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: `${item.productName || "Bundle"}`,
+            description: item.startTime
+              ? `Bundle: ${servicesDesc} - ${new Date(item.startTime).toLocaleDateString()} at ${new Date(item.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+              : `Bundle: ${servicesDesc}`,
           },
           unit_amount: Math.round(item.price * 100),
         },
@@ -168,10 +190,29 @@ export async function POST(req: NextRequest) {
           )
         : undefined;
 
+    const bundleMetaString =
+      bundleItems.length > 0
+        ? JSON.stringify(
+            bundleItems.map((b: any) => ({
+              bundleId: b.bundleId ?? null,
+              bundleBookingId: b.bundleBookingId ?? null,
+              slotId: b.slotId ?? null,
+              startTime: b.startTime ?? null,
+              endTime: b.endTime ?? null,
+              price: b.price,
+              lateFee: b.lateFee ?? 0,
+              quantity: b.quantity,
+              name: b.productName,
+              includedServices: b.includedServices ?? [],
+            }))
+          )
+        : undefined;
+
     const commonMetadata = {
       orderId: order.id,
       userId: user.id,
       bookingItems: bookingMetaString,
+      bundleItems: bundleMetaString,
     };
 
     const session = await stripe.checkout.sessions.create({

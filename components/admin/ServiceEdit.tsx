@@ -5,7 +5,9 @@ import {
   FormTab,
   TextInput,
   NumberInput,
+  SelectInput,
   BooleanInput,
+  FormDataConsumer,
   required,
   minValue,
   useDataProvider,
@@ -16,6 +18,7 @@ import {
 import { useFormContext, useWatch } from "react-hook-form";
 
 import TimeSlotGenerator from "./TimeSlotGenerator";
+import { SliderInput } from "./SliderInput";
 
 type GeneratedSlot = {
   start_time: string;
@@ -121,10 +124,14 @@ export const ServiceEdit = () => {
         <FormTab label="Details">
           <TextInput source="name" validate={required()} fullWidth />
           <TextInput source="description" multiline rows={3} fullWidth />
-          <NumberInput
-            source="duration"
-            label="Duration (minutes)"
-            validate={[required(), minValue(1)]}
+          <SelectInput
+            source="service_kind"
+            label="Service Type"
+            choices={[
+              { id: "training", name: "Training" },
+              { id: "consultation", name: "Consultation" },
+            ]}
+            defaultValue="training"
             fullWidth
           />
           <NumberInput
@@ -134,12 +141,64 @@ export const ServiceEdit = () => {
             fullWidth
           />
           <NumberInput source="price" validate={[required(), minValue(0)]} fullWidth />
+
+          <BooleanInput
+            source="use_late_fees"
+            label="Apply late fees"
+            helperText="Toggle on to configure late fee rules."
+          />
+
+          <FormDataConsumer>
+            {({ formData }) =>
+              formData?.use_late_fees ? (
+                <>
+                  <SliderInput
+                    source="late_fee_days"
+                    label="Late fee window (days)"
+                    min={0}
+                    max={30}
+                    step={1}
+                    suffix=" days"
+                    helperText="Apply late fee when booking within this many days."
+                    fullWidth
+                  />
+                  <SliderInput
+                    source="late_fee_amount"
+                    label="Late fee amount"
+                    min={0}
+                    max={100}
+                    step={5}
+                    suffix=" $"
+                    helperText="Late fee applied inside the window."
+                    fullWidth
+                  />
+                </>
+              ) : null
+            }
+          </FormDataConsumer>
+
           <BooleanInput source="is_active" label="Active" />
           <BooleanInput
             source="is_multi_day"
             label="Multi-day Activity"
-            helperText="Check if this service spans multiple days (e.g., retreats, multi-day workshops)"
           />
+
+          <FormDataConsumer>
+            {({ formData }) =>
+              formData?.service_kind === "consultation" ? (
+                <SliderInput
+                  source="duration"
+                  label="Duration (minutes)"
+                  min={15}
+                  max={480}
+                  step={15}
+                  suffix=" min"
+                  validate={[required(), minValue(1)]}
+                  fullWidth
+                />
+              ) : null
+            }
+          </FormDataConsumer>
         </FormTab>
 
         <FormTab label="Time Slots">
