@@ -1,6 +1,12 @@
 /* eslint-disable @next/next/no-img-element */
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import Link from "next/link";
+import { PageHeader } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ShoppingBag, ShoppingCart, Package } from "lucide-react";
 
 type Product = {
   id: string;
@@ -32,82 +38,84 @@ export default async function StorePage() {
   const products = await getProducts();
 
   return (
-    <main className="page">
-      <header className="hero" style={{ marginBottom: 32 }}>
-        <div className="hero__text">
-          <span className="badge badge-blue">Programs & Resources</span>
-          <h1>Shop training programs and materials</h1>
-          <p>
-            Enroll in CDA, director certification, and leadership workshops with trusted resources.
-          </p>
-          <div className="hero__cta">
-            <Link className="btn-primary" href="/book">
-              Book a consult
-            </Link>
-            <Link className="btn-gold" href="/cart">
-              View cart
-            </Link>
-          </div>
-        </div>
-        <div className="hero__image">
-          <div className="hero__image-placeholder">
-            <span>Replace with program imagery</span>
-          </div>
-        </div>
-      </header>
+    <div className="page-container">
+      <PageHeader
+        badge="Programs & Resources"
+        badgeVariant="blue"
+        title="Shop training programs and materials"
+        description="Enroll in CDA, director certification, and leadership workshops with trusted resources."
+      >
+        <Button variant="primary" size="lg" asChild>
+          <Link href="/book">
+            <ShoppingBag className="h-5 w-5" />
+            Book a consult
+          </Link>
+        </Button>
+        <Button variant="secondary" size="lg" asChild>
+          <Link href="/cart">
+            <ShoppingCart className="h-5 w-5" />
+            View cart
+          </Link>
+        </Button>
+      </PageHeader>
 
-      <section className="section">
-        <div className="section__header">
-          <p className="eyebrow">Catalog</p>
-          <h2>Available programs</h2>
-          <p className="section__lede">Online and hybrid options with upcoming cohorts.</p>
+      <section>
+        <div className="mb-6">
+          <Badge variant="default" className="mb-3">Catalog</Badge>
+          <h2 className="mb-2">Available programs</h2>
+          <p className="text-[var(--foreground-muted)]">Online and hybrid options with upcoming cohorts.</p>
         </div>
 
         {products.length === 0 ? (
-          <div className="card" style={{ textAlign: "center" }}>
-            <p>No products available yet.</p>
-          </div>
+          <EmptyState
+            icon={Package}
+            title="No products available yet"
+            description="We're preparing our catalog. Check back soon for training programs and materials."
+          >
+            <Button variant="primary" asChild>
+              <Link href="/trainings">View training programs</Link>
+            </Button>
+          </EmptyState>
         ) : (
-          <div className="grid-cards">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
             {products.map((product) => (
-              <Link
-                key={product.id}
-                href={`/store/${product.id}`}
-                className="card card--bordered"
-                style={{ display: "block" }}
-              >
-                <div className="aspect-square hero__image" style={{ marginBottom: 16 }}>
-                  {product.image_url ? (
-                    <img
-                      src={product.image_url}
-                      alt={product.name}
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    />
-                  ) : (
-                    <div className="hero__image-placeholder" style={{ minHeight: 180 }}>
-                      <span>No image</span>
+              <Link key={product.id} href={`/store/${product.id}`} className="block group">
+                <Card variant="default" className="overflow-hidden animate-fade-in-up h-full flex flex-col">
+                  <div className="aspect-[4/3] bg-gradient-to-br from-[var(--blue-50)] to-[var(--teal-50)] overflow-hidden">
+                    {product.image_url ? (
+                      <img
+                        src={product.image_url}
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package className="h-12 w-12 text-[var(--primary)] opacity-30" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-5 flex-1 flex flex-col">
+                    <h3 className="text-base mb-1 group-hover:text-[var(--primary)] transition-colors">
+                      {product.name}
+                    </h3>
+                    {product.description && (
+                      <p className="text-sm text-[var(--foreground-muted)] line-clamp-2 mb-3 flex-1">
+                        {product.description}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between mt-auto pt-3 border-t border-[var(--border-light)]">
+                      <Badge variant="gold">${product.price.toFixed(2)}</Badge>
+                      <Badge variant={product.inventory > 0 ? "success" : "error"}>
+                        {product.inventory > 0 ? "In stock" : "Out of stock"}
+                      </Badge>
                     </div>
-                  )}
-                </div>
-                <h3>{product.name}</h3>
-                {product.description && <p className="section__lede">{product.description}</p>}
-                <div className="card__footer">
-                  <span className="badge badge-gold">${product.price.toFixed(2)}</span>
-                  <span
-                    className="pill"
-                    style={{
-                      background: product.inventory > 0 ? "rgba(46,163,217,0.12)" : "rgba(240,64,64,0.12)",
-                      color: product.inventory > 0 ? "var(--blue-primary)" : "#b91c1c",
-                    }}
-                  >
-                    {product.inventory > 0 ? "In stock" : "Out of stock"}
-                  </span>
-                </div>
+                  </div>
+                </Card>
               </Link>
             ))}
           </div>
         )}
       </section>
-    </main>
+    </div>
   );
 }

@@ -1,122 +1,202 @@
 import Link from "next/link";
+import { PageHeader } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { CTASection } from "@/components/ui/cta-section";
+import {
+  GraduationCap,
+  CheckCircle2,
+  Users,
+  Calendar,
+  BookOpen,
+  Scissors,
+  ArrowRight,
+} from "lucide-react";
 
 const tracks = [
   {
     name: "Infant/Toddler CDA",
     seats: "10 slots",
-    price: "$450 (standalone $500)",
-    notes: "Instructor-led weekends (Fri–Sun)",
+    price: "$450",
+    priceNote: "standalone $500",
+    notes: "Instructor-led weekends (Fri-Sun)",
+    icon: "👶",
   },
   {
     name: "Preschool CDA",
     seats: "10 slots",
     price: "$450",
-    notes: "Instructor-led weekends (Fri–Sun)",
+    notes: "Instructor-led weekends (Fri-Sun)",
+    icon: "🎨",
   },
   {
-    name: "Birth–5 CDA",
+    name: "Birth-5 CDA",
     seats: "5 slots",
     price: "$500",
-    notes: "Instructor-led weekends (Fri–Sun)",
+    notes: "Instructor-led weekends (Fri-Sun)",
+    icon: "🌟",
   },
+];
+
+const whyChoose = [
+  "Instructor-led only — no self-paced tracks",
+  "Local Florida Panhandle educators with live support",
+  "Portfolio and practicum guidance; supported even online",
+  "Weekend cadence (Fri-Sun) to fit working teachers",
+  "Bring a can-do attitude; we bring the coaching and checklists",
 ];
 
 export default function CdaPage() {
   return (
-    <main className="page">
-      <header className="section__header" style={{ marginBottom: 24 }}>
-        <p className="eyebrow">CDA Training</p>
-        <h1>National CDA — Instructor-led only</h1>
-        <p className="section__lede">
-          Infant/Toddler, Preschool, and Birth–5 CDA tracks led by instructors. First class is planned for January 23–25
-          with Friday–Sunday sessions.
-        </p>
-        <div className="hero__cta" style={{ marginTop: 12 }}>
-          <Link className="btn-primary" href="/book">
+    <div className="page-container">
+      <PageHeader
+        badge="CDA Training"
+        badgeVariant="blue"
+        title="National CDA — Instructor-led only"
+        description="Infant/Toddler, Preschool, and Birth-5 CDA tracks led by instructors. First class is planned for January 23-25 with Friday-Sunday sessions."
+      >
+        <Button variant="primary" size="lg" asChild>
+          <Link href="/book">
+            <Calendar className="h-5 w-5" />
             Book training
           </Link>
-          <Link className="btn-ghost" href="/contact">
-            Ask a question
-          </Link>
-        </div>
-      </header>
+        </Button>
+        <Button variant="secondary" size="lg" asChild>
+          <Link href="/contact">Ask a question</Link>
+        </Button>
+      </PageHeader>
 
-      <section className="card" style={{ padding: 24, marginBottom: 28 }}>
-        <h3>Why choose us?</h3>
-        <ul className="feature-list" style={{ marginTop: 10 }}>
-          <li>Instructor-led only — no self-paced tracks</li>
-          <li>Local Florida Panhandle educators with live support</li>
-          <li>Portfolio and practicum guidance; supported even online</li>
-          <li>Weekend cadence (Fri–Sun) to fit working teachers</li>
-          <li>Bring a can-do attitude; we bring the coaching and checklists</li>
+      {/* Why choose us */}
+      <Card variant="highlight" className="p-6 mb-10">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="rounded-xl bg-[var(--blue-50)] p-2.5">
+            <GraduationCap className="h-5 w-5 text-[var(--primary)]" />
+          </div>
+          <h3>Why choose our CDA program?</h3>
+        </div>
+        <ul className="space-y-3">
+          {whyChoose.map((item) => (
+            <li key={item} className="flex items-start gap-2.5 text-sm text-[var(--foreground-muted)]">
+              <CheckCircle2 className="h-4 w-4 text-[var(--teal-500)] mt-0.5 shrink-0" />
+              {item}
+            </li>
+          ))}
         </ul>
-      </section>
+      </Card>
 
-      <section className="section">
-        <div className="section__header">
-          <p className="eyebrow">Tracks</p>
-          <h2>Choose your CDA track</h2>
-          <p className="section__lede">Instructor-led weekends, capped seats, and focused outcomes.</p>
+      {/* Tracks */}
+      <section className="mb-12">
+        <div className="mb-6">
+          <Badge variant="default" className="mb-3">Tracks</Badge>
+          <h2 className="mb-2">Choose your CDA track</h2>
+          <p className="text-[var(--foreground-muted)]">Instructor-led weekends, capped seats, and focused outcomes.</p>
         </div>
-        <div className="grid-cards">
+        <div className="grid md:grid-cols-3 gap-6 stagger-children">
           {tracks.map((track) => (
-            <article className="card card--bordered" key={track.name}>
-              <h3>{track.name}</h3>
-              <p className="section__lede">{track.notes}</p>
-              <div className="pill" style={{ marginTop: 8 }}>
-                {track.seats}
-              </div>
-              <div style={{ marginTop: 8, fontWeight: 700 }}>{track.price}</div>
-              <div style={{ marginTop: 12 }}>
-                <Link className="btn-primary" href="/book">
-                  Reserve a slot
-                </Link>
-              </div>
-            </article>
+            <Card key={track.name} variant="bordered" className="flex flex-col animate-fade-in-up">
+              <CardHeader>
+                <p className="text-2xl mb-2">{track.icon}</p>
+                <CardTitle>{track.name}</CardTitle>
+                <p className="text-sm text-[var(--foreground-muted)] mt-1">{track.notes}</p>
+              </CardHeader>
+              <CardContent className="flex-1">
+                <div className="flex items-center gap-2 mb-3">
+                  <Badge variant="outline">
+                    <Users className="h-3 w-3 mr-1" />
+                    {track.seats}
+                  </Badge>
+                </div>
+                <p className="text-2xl font-extrabold text-[var(--blue-900)]">
+                  {track.price}
+                  {track.priceNote && (
+                    <span className="text-sm font-normal text-[var(--foreground-muted)] ml-2">
+                      ({track.priceNote})
+                    </span>
+                  )}
+                </p>
+              </CardContent>
+              <CardFooter>
+                <Button variant="primary" size="sm" className="w-full" asChild>
+                  <Link href="/book">Reserve a slot</Link>
+                </Button>
+              </CardFooter>
+            </Card>
           ))}
         </div>
       </section>
 
-      <section className="section">
-        <div className="section__header">
-          <p className="eyebrow">Staff Training</p>
-          <h2>Supported learning for infant, toddler, and preschool educators</h2>
-          <p className="section__lede">
-            Live, instructor-led sessions plus supported online touchpoints. We focus on practice, compliance, and real
-            classroom readiness.
+      {/* Staff Training */}
+      <section className="mb-12">
+        <div className="mb-6">
+          <Badge variant="default" className="mb-3">Staff Training</Badge>
+          <h2 className="mb-2">Supported learning for educators</h2>
+          <p className="text-[var(--foreground-muted)] max-w-2xl">
+            Live, instructor-led sessions plus supported online touchpoints. We focus on practice, compliance, and real classroom readiness.
           </p>
         </div>
-        <div className="card card--bordered" style={{ padding: 24 }}>
-          <ul className="feature-list">
-            <li>Weekly instructor check-ins with actionable feedback</li>
-            <li>Portfolio checkpoints and practicum guidance</li>
-            <li>Compliance-ready documentation and local context</li>
-            <li>“Can do” expectations: show up prepared to learn and practice</li>
+        <Card variant="default" className="p-6">
+          <ul className="space-y-3">
+            {[
+              "Weekly instructor check-ins with actionable feedback",
+              "Portfolio checkpoints and practicum guidance",
+              "Compliance-ready documentation and local context",
+              "\"Can do\" expectations: show up prepared to learn and practice",
+            ].map((item) => (
+              <li key={item} className="flex items-start gap-2.5 text-sm text-[var(--foreground-muted)]">
+                <CheckCircle2 className="h-4 w-4 text-[var(--teal-500)] mt-0.5 shrink-0" />
+                {item}
+              </li>
+            ))}
           </ul>
-        </div>
+        </Card>
       </section>
 
-      <section className="section">
-        <div className="section__header">
-          <p className="eyebrow">Make &amp; Take</p>
-          <h2>Hands-on Make &amp; Take training</h2>
-          <p className="section__lede">
-            Practical, classroom-ready materials you can build and take with you—guided by instructors.
+      {/* Make & Take */}
+      <section className="mb-12">
+        <div className="mb-6">
+          <Badge variant="default" className="mb-3">Make &amp; Take</Badge>
+          <h2 className="mb-2">Hands-on Make &amp; Take training</h2>
+          <p className="text-[var(--foreground-muted)] max-w-2xl">
+            Practical, classroom-ready materials you can build and take with you — guided by instructors.
           </p>
         </div>
-        <div className="card card--bordered" style={{ padding: 24 }}>
-          <ul className="feature-list">
-            <li>Instructor-led build sessions tailored to your CDA track</li>
-            <li>Materials lists provided in advance</li>
-            <li>Local examples for infant, toddler, and preschool classrooms</li>
+        <Card variant="default" className="p-6">
+          <ul className="space-y-3 mb-6">
+            {[
+              "Instructor-led build sessions tailored to your CDA track",
+              "Materials lists provided in advance",
+              "Local examples for infant, toddler, and preschool classrooms",
+            ].map((item) => (
+              <li key={item} className="flex items-start gap-2.5 text-sm text-[var(--foreground-muted)]">
+                <Scissors className="h-4 w-4 text-[var(--gold-400)] mt-0.5 shrink-0" />
+                {item}
+              </li>
+            ))}
           </ul>
-          <div className="hero__cta" style={{ marginTop: 14 }}>
-            <Link className="btn-primary" href="/book">
+          <Button variant="primary" asChild>
+            <Link href="/book">
               Book Make &amp; Take
+              <ArrowRight className="h-4 w-4" />
             </Link>
-          </div>
-        </div>
+          </Button>
+        </Card>
       </section>
-    </main>
+
+      {/* Next steps */}
+      <CTASection
+        variant="subtle"
+        eyebrow="Next steps"
+        title="Ready to start your CDA journey?"
+        description="Book your first training session and join the next cohort."
+      >
+        <Button variant="primary" size="lg" asChild>
+          <Link href="/book">
+            <Calendar className="h-5 w-5" />
+            Book Training
+          </Link>
+        </Button>
+      </CTASection>
+    </div>
   );
 }

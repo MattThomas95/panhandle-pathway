@@ -7,6 +7,19 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabaseJsClient } from "@/lib/supabase";
 import { loadStripe } from "@stripe/stripe-js";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Stepper } from "@/components/ui/stepper";
+import { TrustPanel } from "@/components/ui/trust-panel";
+import { PageHeader } from "@/components/ui/page-header";
+import {
+  ArrowLeft,
+  CreditCard,
+  Package,
+  ShieldCheck,
+  Truck,
+} from "lucide-react";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -125,268 +138,179 @@ export default function CheckoutPage() {
     return null;
   }
 
+  const inputClass =
+    "w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 text-[var(--foreground)] shadow-sm focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 transition-colors";
+  const labelClass = "block text-sm font-bold text-[var(--foreground)] mb-1.5";
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#f7f2e7] to-[#fdfbf6] text-slate-900">
-      <header className="border-b border-slate-200/70 bg-white/70 backdrop-blur">
-        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Secure checkout</p>
-              <h1 className="text-3xl font-semibold text-[#103b64]">Complete your order</h1>
+    <div className="page-container">
+      <PageHeader
+        badge="Secure checkout"
+        badgeVariant="blue"
+        title="Complete your order"
+        description="Review your items and enter your details to proceed to payment."
+      >
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/cart">
+            <ArrowLeft className="h-4 w-4" />
+            Back to cart
+          </Link>
+        </Button>
+      </PageHeader>
+
+      <Stepper
+        steps={[
+          { label: "Cart", status: "completed" },
+          { label: "Details", status: "current" },
+          { label: "Payment", status: "upcoming" },
+        ]}
+        className="mb-8"
+      />
+
+      <div className="grid lg:grid-cols-3 gap-8 items-start">
+        {/* Form */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Contact Information */}
+          <Card variant="default" className="p-6">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <h2 className="text-base">Contact information</h2>
+              <Badge variant="blue">Step 1 of 2</Badge>
             </div>
-            <Link
-              href="/cart"
-              className="inline-flex items-center gap-2 text-sm font-medium text-[#1e7fb6] hover:underline"
-            >
-              ← Back to cart
-            </Link>
-          </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <label htmlFor="name" className={labelClass}>Full name *</label>
+                <input type="text" id="name" name="name" required value={shippingAddress.name} onChange={handleInputChange} className={inputClass} />
+              </div>
+              <div>
+                <label htmlFor="email" className={labelClass}>Email *</label>
+                <input type="email" id="email" name="email" required value={shippingAddress.email} onChange={handleInputChange} className={inputClass} />
+              </div>
+              <div>
+                <label htmlFor="phone" className={labelClass}>Phone *</label>
+                <input type="tel" id="phone" name="phone" required value={shippingAddress.phone} onChange={handleInputChange} className={inputClass} />
+              </div>
+            </div>
+          </Card>
+
+          {/* Billing Details */}
+          <Card variant="default" className="p-6">
+            <div className="flex items-center justify-between gap-3 mb-1">
+              <h2 className="text-base">Billing details</h2>
+              <Badge variant="blue">Step 2 of 2</Badge>
+            </div>
+            <p className="text-sm text-[var(--foreground-muted)] mb-4">
+              Use the address for your receipt and any certification paperwork.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="line1" className={labelClass}>Address line 1 *</label>
+                <input type="text" id="line1" name="line1" required value={shippingAddress.line1} onChange={handleInputChange} className={inputClass} />
+              </div>
+              <div>
+                <label htmlFor="line2" className={labelClass}>Address line 2</label>
+                <input type="text" id="line2" name="line2" value={shippingAddress.line2} onChange={handleInputChange} className={inputClass} />
+              </div>
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div>
+                  <label htmlFor="city" className={labelClass}>City *</label>
+                  <input type="text" id="city" name="city" required value={shippingAddress.city} onChange={handleInputChange} className={inputClass} />
+                </div>
+                <div>
+                  <label htmlFor="state" className={labelClass}>State *</label>
+                  <input type="text" id="state" name="state" required value={shippingAddress.state} onChange={handleInputChange} className={inputClass} />
+                </div>
+                <div>
+                  <label htmlFor="postal_code" className={labelClass}>ZIP code *</label>
+                  <input type="text" id="postal_code" name="postal_code" required value={shippingAddress.postal_code} onChange={handleInputChange} className={inputClass} />
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Trust panel */}
+          <TrustPanel variant="inline" />
+
+          {error && (
+            <div className="rounded-xl border border-[var(--error)]/20 bg-[var(--rose-50)] p-4 text-sm font-medium text-[var(--error)]">
+              {error}
+            </div>
+          )}
+
+          <Button
+            variant="primary"
+            size="xl"
+            className="w-full"
+            onClick={handleSubmit}
+            disabled={isLoading || !user}
+          >
+            <CreditCard className="h-5 w-5" />
+            {isLoading ? "Redirecting to Stripe..." : "Continue to payment"}
+          </Button>
+
+          {!user && (
+            <p className="text-center text-sm text-[var(--foreground-muted)]">
+              Please{" "}
+              <Link href="/auth/login" className="font-bold text-[var(--primary)] hover:underline">
+                log in
+              </Link>{" "}
+              to place an order.
+            </p>
+          )}
         </div>
-      </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-[0_15px_40px_rgba(16,59,100,0.07)]">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-lg font-semibold text-[#103b64]">Contact Information</h2>
-                <span className="text-xs rounded-full bg-[#2fa4d9]/10 px-3 py-1 font-medium text-[#2fa4d9]">Step 1 of 2</span>
-              </div>
-              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <label htmlFor="name" className="block text-sm font-medium text-slate-700">
-                    Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    required
-                    value={shippingAddress.name}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-[#1e7fb6] focus:outline-none"
-                  />
+        {/* Order summary sidebar */}
+        <Card variant="bordered" className="p-6 sticky top-24">
+          <h3 className="text-base mb-4">Order summary</h3>
+
+          <div className="space-y-3">
+            {items.map((item) => (
+              <div key={item.productId} className="flex gap-3 rounded-xl bg-[var(--surface)] p-3">
+                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-[var(--blue-50)] to-[var(--teal-50)]">
+                  {item.imageUrl ? (
+                    <img src={item.imageUrl} alt={item.productName} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <Package className="h-5 w-5 text-[var(--primary)] opacity-30" />
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-slate-700">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    required
-                    value={shippingAddress.email}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-[#1e7fb6] focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-slate-700">
-                    Phone *
-                  </label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    required
-                    value={shippingAddress.phone}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-[#1e7fb6] focus:outline-none"
-                  />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-[var(--foreground)] truncate">{item.productName}</p>
+                  {item.kind === "booking" && item.startTime ? (
+                    <p className="text-xs text-[var(--foreground-muted)]">
+                      {new Date(item.startTime).toLocaleDateString()} &middot;{" "}
+                      {new Date(item.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  ) : null}
+                  <p className="text-xs text-[var(--foreground-muted)]">Qty: {item.quantity}</p>
+                  <p className="text-sm font-extrabold text-[var(--blue-900)]">
+                    ${(item.price * item.quantity).toFixed(2)}
+                  </p>
                 </div>
               </div>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-[0_15px_40px_rgba(16,59,100,0.07)]">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-lg font-semibold text-[#103b64]">Billing Details</h2>
-                <span className="text-xs rounded-full bg-[#2fa4d9]/10 px-3 py-1 font-medium text-[#2fa4d9]">Step 2 of 2</span>
-              </div>
-              <p className="mt-1 text-sm text-slate-500">Use the address for your receipt and any certification paperwork.</p>
-              <div className="mt-4 space-y-4">
-                <div>
-                  <label htmlFor="line1" className="block text-sm font-medium text-slate-700">
-                    Address Line 1 *
-                  </label>
-                  <input
-                    type="text"
-                    id="line1"
-                    name="line1"
-                    required
-                    value={shippingAddress.line1}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-[#1e7fb6] focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="line2" className="block text-sm font-medium text-slate-700">
-                    Address Line 2
-                  </label>
-                  <input
-                    type="text"
-                    id="line2"
-                    name="line2"
-                    value={shippingAddress.line2}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-[#1e7fb6] focus:outline-none"
-                  />
-                </div>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                  <div>
-                    <label htmlFor="city" className="block text-sm font-medium text-slate-700">
-                      City *
-                    </label>
-                    <input
-                      type="text"
-                      id="city"
-                      name="city"
-                      required
-                      value={shippingAddress.city}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-[#1e7fb6] focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="state" className="block text-sm font-medium text-slate-700">
-                      State *
-                    </label>
-                    <input
-                      type="text"
-                      id="state"
-                      name="state"
-                      required
-                      value={shippingAddress.state}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-[#1e7fb6] focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="postal_code" className="block text-sm font-medium text-slate-700">
-                      ZIP Code *
-                    </label>
-                    <input
-                      type="text"
-                      id="postal_code"
-                      name="postal_code"
-                      required
-                      value={shippingAddress.postal_code}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-[#1e7fb6] focus:outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-[#2fa4d9]/25 bg-[#eaf6fc] p-4 text-sm text-[#0f4f78] shadow-inner">
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white text-[#2fa4d9] shadow-sm">
-                  ✓
-                </span>
-                <p>
-                  <strong>Secure payment.</strong> You’ll be redirected to Stripe to complete payment with card. Your order is saved when payment succeeds.
-                </p>
-              </div>
-            </div>
-
-            {error && (
-              <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800">
-                <p className="text-sm font-medium">
-                  {error}
-                </p>
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isLoading || !user}
-              className="w-full rounded-full bg-[#2fa4d9] py-4 text-lg font-semibold text-white shadow-lg shadow-[#2fa4d9]/30 transition-all hover:bg-[#1e7fb6] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isLoading ? "Redirecting to Stripe..." : "Continue to Payment"}
-            </button>
-
-            {!user && (
-              <p className="text-center text-sm text-slate-600">
-                Please{" "}
-                <Link href="/auth/login" className="underline">
-                  log in
-                </Link>{" "}
-                to place an order
-              </p>
-            )}
+            ))}
           </div>
 
-          <div className="lg:col-span-1">
-            <div className="sticky top-4 rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-[0_15px_40px_rgba(16,59,100,0.07)]">
-              <h2 className="text-lg font-semibold text-[#103b64]">Order Summary</h2>
-
-              <div className="mt-6 space-y-4">
-                {items.map((item) => (
-                  <div key={item.productId} className="flex gap-3 rounded-lg border border-slate-100 bg-slate-50/60 p-3">
-                    <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded bg-slate-100">
-                      {item.imageUrl ? (
-                        <img
-                          src={item.imageUrl}
-                          alt={item.productName}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-slate-400">
-                          <svg
-                            className="h-5 w-5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={1}
-                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                            />
-                          </svg>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-[#0f2f4a]">
-                        {item.productName}
-                      </p>
-                      {item.kind === "booking" && item.startTime ? (
-                        <p className="text-xs text-slate-600">
-                          {new Date(item.startTime).toLocaleDateString()} ·{" "}
-                          {new Date(item.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                        </p>
-                      ) : null}
-                      <p className="text-xs text-slate-600">Qty: {item.quantity}</p>
-                      <p className="text-sm font-semibold text-[#103b64]">
-                        ${(item.price * item.quantity).toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-6 space-y-2 border-t border-slate-200 pt-4">
-                <div className="flex justify-between text-sm text-slate-700">
-                  <span>Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm text-slate-700">
-                  <span>Shipping</span>
-                  <span>{shipping === 0 ? "FREE" : `$${shipping.toFixed(2)}`}</span>
-                </div>
-                <div className="flex justify-between border-t border-slate-200 pt-3 text-lg font-bold text-[#103b64]">
-                  <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
-                </div>
-              </div>
+          <div className="mt-5 space-y-2 border-t border-[var(--border)] pt-4 text-sm">
+            <div className="flex justify-between">
+              <span className="text-[var(--foreground-muted)]">Subtotal</span>
+              <span className="font-bold">${subtotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-[var(--foreground-muted)] flex items-center gap-1">
+                <Truck className="h-3.5 w-3.5" /> Shipping
+              </span>
+              <span className="font-bold">
+                {shipping === 0 ? <Badge variant="success">FREE</Badge> : `$${shipping.toFixed(2)}`}
+              </span>
+            </div>
+            <div className="flex justify-between border-t border-[var(--border)] pt-3">
+              <span className="font-bold">Total</span>
+              <span className="text-lg font-extrabold text-[var(--blue-900)]">${total.toFixed(2)}</span>
             </div>
           </div>
-        </div>
-      </main>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -4,6 +4,24 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  User,
+  ShoppingBag,
+  CalendarCheck,
+  Mail,
+  ShieldCheck,
+  Building2,
+  LogOut,
+  XCircle,
+  Package,
+  Clock,
+  ArrowRight,
+  AlertTriangle,
+} from "lucide-react";
 
 type Booking = {
   id: string;
@@ -136,18 +154,14 @@ export default function DashboardPage() {
     setCancellingId(selectedBooking.id);
 
     try {
-      // Fetch the booking to get its slot_id
       const { data: bookingRow, error: fetchErr } = await supabase
         .from("bookings")
         .select("id, slot_id")
         .eq("id", selectedBooking.id)
         .single();
 
-      if (fetchErr) {
-        throw fetchErr;
-      }
+      if (fetchErr) throw fetchErr;
 
-      // Decrement booked_count for the slot, restore availability
       if (bookingRow?.slot_id) {
         const { data: slot } = await supabase
           .from("time_slots")
@@ -165,15 +179,12 @@ export default function DashboardPage() {
         }
       }
 
-      // Remove the booking entirely to avoid unique constraint conflicts
       const { error: deleteErr } = await supabase
         .from("bookings")
         .delete()
         .eq("id", selectedBooking.id);
 
-      if (deleteErr) {
-        throw deleteErr;
-      }
+      if (deleteErr) throw deleteErr;
 
       await fetchBookings();
     } catch (error) {
@@ -216,235 +227,291 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <main className="page" style={{ textAlign: "center" }}>
-        <p>Loading...</p>
-      </main>
+      <div className="section-container py-20">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-full border-4 border-[var(--blue-200)] border-t-[var(--primary)] animate-spin" />
+          <p className="text-[var(--foreground-muted)] font-medium">Loading your dashboard...</p>
+        </div>
+      </div>
     );
   }
 
+  const headerActions = (
+    <div className="flex items-center gap-2 flex-wrap">
+      {profile?.role === "admin" && (
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/admin"><ShieldCheck className="h-4 w-4" /> Admin</Link>
+        </Button>
+      )}
+      {profile?.is_org_admin && (
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/org"><Building2 className="h-4 w-4" /> Org portal</Link>
+        </Button>
+      )}
+      <Button variant="secondary" size="sm" onClick={handleSignOut}>
+        <LogOut className="h-4 w-4" /> Sign out
+      </Button>
+    </div>
+  );
+
   return (
-    <main className="page">
-      <section className="section" style={{ marginBottom: 24 }}>
-        <div className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
-          <div>
-            <p className="eyebrow">Account</p>
-            <h1 style={{ margin: "4px 0" }}>Hi, {profile?.full_name || user?.email}</h1>
-            <p className="section__lede">Manage your bookings, profile, and settings.</p>
-          </div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
-            {profile?.role === "admin" && (
-              <Link className="btn-ghost" href="/admin">
-                Admin
-              </Link>
-            )}
-            {profile?.is_org_admin && (
-              <Link className="btn-ghost" href="/org">
-                Org portal
-              </Link>
-            )}
-            <button onClick={handleSignOut} className="btn-primary">
-              Sign out
-            </button>
-          </div>
-        </div>
-      </section>
+    <div className="section-container py-12 space-y-10">
+      <PageHeader
+        badge="Account"
+        title={`Hi, ${profile?.full_name || user?.email}`}
+        subtitle="Manage your bookings, profile, and settings."
+        actions={headerActions}
+      />
 
-      <section className="grid-cards">
-        <div className="card">
-          <h2>Your profile</h2>
-          <ul className="feature-list">
-            <li>
-              <strong>Email:</strong> {user?.email}
-            </li>
-            <li>
-              <strong>Name:</strong> {profile?.full_name || "Not set"}
-            </li>
-            <li>
-              <strong>Role:</strong> {profile?.role || "user"}
-            </li>
-          </ul>
-        </div>
-
-        <div className="card">
-          <h2>Quick links</h2>
-          <div className="feature-list">
-            <li>
-              <Link className="link" href="/store">
-                Visit store
-              </Link>
-            </li>
-            <li>
-              <Link className="link" href="/book">
-                Book an appointment
-              </Link>
-            </li>
-          </div>
-        </div>
-
-        <div className="card">
-          <h2>Support</h2>
-          <p className="section__lede">Need help? Reach out to support anytime.</p>
-          <Link className="btn-primary" href="mailto:support@panhandlepathways.com">
-            Email support
-          </Link>
-        </div>
-
-        <div className="card">
-          <h2>Orders</h2>
-          <p className="section__lede">Cancel an order and release any associated bookings.</p>
-          <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center", flexWrap: "wrap" }}>
-            <input
-              type="text"
-              value={orderIdInput}
-              onChange={(e) => setOrderIdInput(e.target.value)}
-              placeholder="Order ID"
-              style={{
-                flex: "1 1 180px",
-                padding: "10px 12px",
-                borderRadius: 10,
-                border: "1px solid rgba(0,0,0,0.12)",
-              }}
-            />
-            <button
-              onClick={handleOrderCancel}
-              disabled={orderCancelLoading}
-              className="btn-ghost"
-              style={{ whiteSpace: "nowrap", minHeight: 40 }}
-            >
-              {orderCancelLoading ? "Cancelling..." : "Cancel order"}
-            </button>
-          </div>
-          {orderCancelError ? (
-            <p style={{ marginTop: 8, color: "#b91c1c", fontWeight: 600 }}>{orderCancelError}</p>
-          ) : null}
-          {orderCancelMessage ? (
-            <p style={{ marginTop: 8, color: "#15803d", fontWeight: 600 }}>{orderCancelMessage}</p>
-          ) : null}
-        </div>
-      </section>
-
-      <section className="section">
-        <div className="section__header">
-          <p className="eyebrow">Orders</p>
-          <h2>Recent orders</h2>
-        </div>
-        <div className="grid-cards">
-          {orders.length === 0 ? (
-            <div className="card">
-              <p className="section__lede">No orders yet.</p>
+      {/* Quick cards */}
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Profile */}
+        <Card>
+          <CardHeader>
+            <div className="w-10 h-10 rounded-xl bg-[var(--blue-50)] text-[var(--primary)] flex items-center justify-center mb-2">
+              <User className="h-5 w-5" />
             </div>
-          ) : (
-            orders.slice(0, 3).map((order) => (
-              <Link key={order.id} href={`/orders#${order.id}`} className="card card--bordered" style={{ display: "block" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <h3>Order {order.id}</h3>
-                    <p className="section__lede">
-                      ${order.total.toFixed(2)} · {new Date(order.created_at).toLocaleDateString()}
-                    </p>
-                    <p className="section__lede">
-                      Status: {order.status} {order.stripe_payment_status ? `(${order.stripe_payment_status})` : ""}
-                    </p>
-                  </div>
-                  <span className="pill">View</span>
-                </div>
+            <CardTitle>Your profile</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-[var(--foreground-muted)]">Email</span>
+              <span className="font-medium truncate ml-2">{user?.email}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[var(--foreground-muted)]">Name</span>
+              <span className="font-medium">{profile?.full_name || "Not set"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[var(--foreground-muted)]">Role</span>
+              <Badge variant={profile?.role === "admin" ? "default" : "secondary"}>
+                {profile?.role || "user"}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Quick links */}
+        <Card>
+          <CardHeader>
+            <div className="w-10 h-10 rounded-xl bg-[var(--gold-50)] text-[var(--gold-600)] flex items-center justify-center mb-2">
+              <ArrowRight className="h-5 w-5" />
+            </div>
+            <CardTitle>Quick links</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Button variant="ghost" size="sm" className="w-full justify-start" asChild>
+              <Link href="/store"><ShoppingBag className="h-4 w-4" /> Visit store</Link>
+            </Button>
+            <Button variant="ghost" size="sm" className="w-full justify-start" asChild>
+              <Link href="/book"><CalendarCheck className="h-4 w-4" /> Book an appointment</Link>
+            </Button>
+            <Button variant="ghost" size="sm" className="w-full justify-start" asChild>
+              <Link href="/orders"><Package className="h-4 w-4" /> View all orders</Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Support */}
+        <Card>
+          <CardHeader>
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2">
+              <Mail className="h-5 w-5" />
+            </div>
+            <CardTitle>Support</CardTitle>
+            <CardDescription>Need help? Reach out to support anytime.</CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button variant="secondary" size="sm" asChild>
+              <a href="mailto:support@panhandlepathways.com"><Mail className="h-4 w-4" /> Email support</a>
+            </Button>
+          </CardFooter>
+        </Card>
+
+        {/* Cancel order */}
+        <Card>
+          <CardHeader>
+            <div className="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center mb-2">
+              <XCircle className="h-5 w-5" />
+            </div>
+            <CardTitle>Cancel order</CardTitle>
+            <CardDescription>Cancel an order and release associated bookings.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={orderIdInput}
+                onChange={(e) => setOrderIdInput(e.target.value)}
+                placeholder="Order ID"
+                className="flex-1 min-w-0 rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+              />
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleOrderCancel}
+                disabled={orderCancelLoading}
+              >
+                {orderCancelLoading ? "..." : "Cancel"}
+              </Button>
+            </div>
+            {orderCancelError && (
+              <p className="mt-2 text-sm font-semibold text-red-600">{orderCancelError}</p>
+            )}
+            {orderCancelMessage && (
+              <p className="mt-2 text-sm font-semibold text-emerald-600">{orderCancelMessage}</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent orders */}
+      <section className="space-y-4">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-[var(--primary)] mb-1">Orders</p>
+          <h2 className="font-heading text-2xl font-bold text-[var(--foreground)]">Recent orders</h2>
+        </div>
+        {orders.length === 0 ? (
+          <Card className="text-center py-8">
+            <CardContent>
+              <Package className="h-10 w-10 mx-auto text-[var(--foreground-muted)] mb-3 opacity-40" />
+              <p className="text-[var(--foreground-muted)] font-medium">No orders yet.</p>
+              <Button variant="primary" size="sm" className="mt-4" asChild>
+                <Link href="/store">Browse store</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {orders.slice(0, 3).map((order) => (
+              <Link key={order.id} href={`/orders#${order.id}`} className="block group">
+                <Card className="transition-shadow group-hover:shadow-lg">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">Order #{order.id.slice(0, 8)}</CardTitle>
+                      <Badge variant={order.status === "paid" ? "default" : "secondary"}>
+                        {order.status}
+                      </Badge>
+                    </div>
+                    <CardDescription>
+                      ${order.total.toFixed(2)} &middot; {new Date(order.created_at).toLocaleDateString()}
+                      {order.stripe_payment_status && ` (${order.stripe_payment_status})`}
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
               </Link>
-            ))
-          )}
-        </div>
-        <div style={{ marginTop: 12 }}>
-          <Link className="btn-primary" href="/orders">
-            View all orders
-          </Link>
-        </div>
+            ))}
+          </div>
+        )}
+        {orders.length > 0 && (
+          <Button variant="secondary" size="sm" asChild>
+            <Link href="/orders">View all orders <ArrowRight className="h-4 w-4" /></Link>
+          </Button>
+        )}
       </section>
 
-      <section className="section">
-        <div className="section__header">
-          <p className="eyebrow">Bookings</p>
-          <h2>Upcoming bookings</h2>
+      {/* Upcoming bookings */}
+      <section className="space-y-4">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-[var(--primary)] mb-1">Bookings</p>
+          <h2 className="font-heading text-2xl font-bold text-[var(--foreground)]">Upcoming bookings</h2>
         </div>
-        <div className="grid-cards">
-          {bookings.length === 0 ? (
-            <div className="card">
-              <p className="section__lede">No upcoming bookings.</p>
-              <Link className="btn-primary" href="/book" style={{ marginTop: 12 }}>
-                Book now
-              </Link>
-            </div>
-          ) : (
-            bookings.map((booking) => (
-              <div key={booking.id} className="card card--bordered">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <h3>{booking.services?.name}</h3>
-                    <p className="section__lede">
-                      {booking.time_slots?.start_time
-                        ? `${new Date(booking.time_slots.start_time).toLocaleDateString()} at ${new Date(booking.time_slots.start_time).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}`
-                        : "Date/time TBA"}
-                    </p>
-                    <span
-                      className="badge"
-                      style={{
-                        background: booking.status === "confirmed" ? "rgba(16,185,129,0.15)" : "rgba(255,196,85,0.25)",
-                        color: booking.status === "confirmed" ? "#15803d" : "#92400e",
-                      }}
+        {bookings.length === 0 ? (
+          <Card className="text-center py-8">
+            <CardContent>
+              <Clock className="h-10 w-10 mx-auto text-[var(--foreground-muted)] mb-3 opacity-40" />
+              <p className="text-[var(--foreground-muted)] font-medium">No upcoming bookings.</p>
+              <Button variant="primary" size="sm" className="mt-4" asChild>
+                <Link href="/book">Book now</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {bookings.map((booking) => (
+              <Card key={booking.id}>
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <CardTitle className="text-base">{booking.services?.name || "Training"}</CardTitle>
+                      <CardDescription>
+                        {booking.time_slots?.start_time
+                          ? `${new Date(booking.time_slots.start_time).toLocaleDateString()} at ${new Date(
+                              booking.time_slots.start_time
+                            ).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+                          : "Date/time TBA"}
+                      </CardDescription>
+                    </div>
+                    <Badge
+                      variant={booking.status === "confirmed" ? "default" : "secondary"}
+                      className={
+                        booking.status === "confirmed"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          : "bg-amber-50 text-amber-700 border-amber-200"
+                      }
                     >
                       {booking.status}
-                    </span>
+                    </Badge>
                   </div>
-                  <button
+                </CardHeader>
+                <CardFooter>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
                     onClick={() => handleCancelClick(booking)}
                     disabled={cancellingId === booking.id}
-                    className="btn-ghost"
-                    style={{ borderColor: "rgba(220,38,38,0.3)", color: "#b91c1c" }}
                   >
-                    {cancellingId === booking.id ? "Cancelling..." : "Cancel"}
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+                    <XCircle className="h-4 w-4" />
+                    {cancellingId === booking.id ? "Cancelling..." : "Cancel booking"}
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        )}
       </section>
 
+      {/* Cancel modal */}
       {showCancelModal && selectedBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="card" style={{ maxWidth: 520, width: "100%" }}>
-            <h3>Cancel booking?</h3>
-            <p className="section__lede">
-              Are you sure you want to cancel {selectedBooking.services?.name} on{" "}
-              {selectedBooking.time_slots?.start_time
-                ? new Date(selectedBooking.time_slots.start_time).toLocaleDateString()
-                : "this date"}
-              ?
-            </p>
-            <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-              <button
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
+          <Card className="max-w-md w-full">
+            <CardHeader>
+              <div className="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-2">
+                <AlertTriangle className="h-6 w-6" />
+              </div>
+              <CardTitle className="text-center">Cancel booking?</CardTitle>
+              <CardDescription className="text-center">
+                Are you sure you want to cancel <strong>{selectedBooking.services?.name}</strong> on{" "}
+                {selectedBooking.time_slots?.start_time
+                  ? new Date(selectedBooking.time_slots.start_time).toLocaleDateString()
+                  : "this date"}
+                ? This action cannot be undone.
+              </CardDescription>
+            </CardHeader>
+            <CardFooter className="flex gap-3">
+              <Button
+                variant="secondary"
+                className="flex-1"
                 onClick={() => {
                   setShowCancelModal(false);
                   setSelectedBooking(null);
                 }}
-                className="btn-ghost"
-                style={{ flex: 1 }}
               >
                 Keep booking
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="primary"
+                className="flex-1 bg-red-600 hover:bg-red-700"
                 onClick={handleCancelConfirm}
                 disabled={cancellingId !== null}
-                className="btn-primary"
-                style={{ flex: 1, background: "#dc2626" }}
               >
                 {cancellingId ? "Cancelling..." : "Yes, cancel"}
-              </button>
-            </div>
-          </div>
+              </Button>
+            </CardFooter>
+          </Card>
         </div>
       )}
-    </main>
+    </div>
   );
 }

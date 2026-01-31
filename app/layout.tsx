@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Playfair_Display, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
-import { CartProvider } from "@/components/store/CartContext";
-import { SiteHeader } from "@/components/SiteHeader";
+import { Providers } from "@/components/Providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,12 +28,9 @@ const sourceSans = Source_Sans_3({
 
 export const metadata: Metadata = {
   title: "Panhandle Pathways Teacher Training Center LLC",
-  description: "Instructor-led CDA and director training for Florida’s childcare educators.",
+  description:
+    "Instructor-led CDA and director training for Florida's childcare educators.",
 };
-
-const maintenanceOn =
-  process.env.MAINTENANCE_MODE === "true" ||
-  process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
 
 export default function RootLayout({
   children,
@@ -46,10 +42,7 @@ export default function RootLayout({
       <body
         className={`${sourceSans.variable} ${playfair.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <CartProvider>
-          {!maintenanceOn && <SiteHeader />}
-          <main className="site-main">{children}</main>
-        </CartProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ShoppingBag, Loader2, Calendar, User as UserIcon } from "lucide-react";
 
 type OrderBooking = {
   booking: {
@@ -54,7 +60,6 @@ export default function OrdersPage() {
         .eq("id", session.user.id)
         .single();
 
-      // Fetch orders
       const { data: orderRows, error: ordersError } = await supabase
         .from("orders")
         .select("id, total, status, stripe_payment_status, created_at")
@@ -106,7 +111,6 @@ export default function OrdersPage() {
             order_bookings: grouped[o.id] || [],
           }));
 
-          // Collect member profile ids for org admins
           const memberIds = new Set<string>();
           Object.values(grouped).forEach((arr) =>
             arr.forEach((ob) => {
@@ -162,66 +166,89 @@ export default function OrdersPage() {
 
   if (loading) {
     return (
-      <main className="page" style={{ textAlign: "center" }}>
-        <p>Loading orders...</p>
-      </main>
+      <div className="page-container flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--primary)]" />
+      </div>
     );
   }
 
   return (
-    <main className="page" id="orders">
-      <header className="section" style={{ marginBottom: 16 }}>
-        <p className="eyebrow">Orders</p>
-        <h1>My orders</h1>
-        <p className="section__lede">Manage your orders, bookings, and slot details.</p>
-        {fetchError ? <p style={{ color: "#b91c1c", fontWeight: 700 }}>{fetchError}</p> : null}
-        {cancelError ? <p style={{ color: "#b91c1c", fontWeight: 700 }}>{cancelError}</p> : null}
-        {cancelSuccess ? <p style={{ color: "#15803d", fontWeight: 700 }}>{cancelSuccess}</p> : null}
-      </header>
+    <div className="page-container" id="orders">
+      <PageHeader
+        badge="Orders"
+        title="My orders"
+        description="Manage your orders, bookings, and slot details."
+      />
 
-      <section className="grid-cards">
-        {orders.length === 0 ? (
-          <div className="card">
-            <p className="section__lede">No orders yet.</p>
-            <Link className="btn-primary" href="/store" style={{ marginTop: 12 }}>
-              Browse programs
-            </Link>
-          </div>
-        ) : (
-          orders.map((order) => (
-            <div key={order.id} id={order.id} className="card card--bordered">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+      {fetchError && (
+        <div className="rounded-xl border border-[var(--error)]/20 bg-[var(--rose-50)] p-3 text-sm font-bold text-[var(--error)] mb-6">
+          {fetchError}
+        </div>
+      )}
+      {cancelError && (
+        <div className="rounded-xl border border-[var(--error)]/20 bg-[var(--rose-50)] p-3 text-sm font-bold text-[var(--error)] mb-6">
+          {cancelError}
+        </div>
+      )}
+      {cancelSuccess && (
+        <div className="rounded-xl border border-[var(--teal-500)]/20 bg-[var(--teal-50)] p-3 text-sm font-bold text-[var(--teal-600)] mb-6">
+          {cancelSuccess}
+        </div>
+      )}
+
+      {orders.length === 0 ? (
+        <EmptyState
+          icon={ShoppingBag}
+          title="No orders yet"
+          description="Once you purchase a program or book a training, your orders will appear here."
+        >
+          <Button variant="primary" asChild>
+            <Link href="/store">Browse programs</Link>
+          </Button>
+        </EmptyState>
+      ) : (
+        <div className="space-y-6">
+          {orders.map((order) => (
+            <Card key={order.id} id={order.id} variant="bordered" className="p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <h3>Order {order.id}</h3>
-                  <p className="section__lede">
-                    ${order.total.toFixed(2)} · {new Date(order.created_at).toLocaleDateString()}
+                  <p className="font-bold text-[var(--foreground)]">Order {order.id.slice(0, 8)}...</p>
+                  <p className="text-sm text-[var(--foreground-muted)] mt-1">
+                    ${order.total.toFixed(2)} &middot; {new Date(order.created_at).toLocaleDateString()}
                   </p>
-                  <p className="section__lede">
-                    Status: {order.status} {order.stripe_payment_status ? `(${order.stripe_payment_status})` : ""}
-                  </p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Badge variant={order.status === "completed" ? "success" : order.status === "cancelled" ? "error" : "default"}>
+                      {order.status}
+                    </Badge>
+                    {order.stripe_payment_status && (
+                      <Badge variant="outline">{order.stripe_payment_status}</Badge>
+                    )}
+                  </div>
                 </div>
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => handleCancel(order.id)}
                   disabled={cancelId === order.id || order.status === "cancelled" || order.status === "refunded"}
-                  className="btn-ghost"
-                  style={{ borderColor: "rgba(220,38,38,0.3)", color: "#b91c1c" }}
+                  className="text-[var(--error)] hover:text-[var(--error)] hover:bg-[var(--rose-50)]"
                 >
                   {cancelId === order.id ? "Cancelling..." : "Cancel"}
-                </button>
+                </Button>
               </div>
 
-              {order.order_bookings && order.order_bookings.length ? (
-                <div style={{ marginTop: 12 }}>
-                  <p className="eyebrow">Bookings</p>
-                  <div className="grid-cards">
+              {order.order_bookings && order.order_bookings.length > 0 && (
+                <div className="mt-5 pt-4 border-t border-[var(--border-light)]">
+                  <Badge variant="default" className="mb-3">Bookings</Badge>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {order.order_bookings.map((ob, idx) => {
                       const b = ob.booking;
                       if (!b) return null;
                       const member = b.user_id ? memberProfiles[b.user_id] : null;
                       return (
-                        <div key={`${order.id}-${b.id}-${idx}`} className="card">
-                          <h4>{b.services?.name || "Booking"}</h4>
-                          <p className="section__lede">
+                        <Card key={`${order.id}-${b.id}-${idx}`} variant="default" className="p-4">
+                          <p className="font-bold text-sm">{b.services?.name || "Booking"}</p>
+                          <p className="text-xs text-[var(--foreground-muted)] mt-1 flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
                             {b.time_slots?.start_time
                               ? `${new Date(b.time_slots.start_time).toLocaleDateString()} · ${new Date(b.time_slots.start_time).toLocaleTimeString([], {
                                   hour: "2-digit",
@@ -229,30 +256,28 @@ export default function OrdersPage() {
                                 })}`
                               : "Date/time TBA"}
                           </p>
-                          <span
-                            className="badge"
-                            style={{
-                              background: b.status === "confirmed" ? "rgba(16,185,129,0.15)" : "rgba(255,196,85,0.25)",
-                              color: b.status === "confirmed" ? "#15803d" : "#92400e",
-                            }}
+                          <Badge
+                            variant={b.status === "confirmed" ? "success" : "warning"}
+                            className="mt-2"
                           >
                             {b.status}
-                          </span>
-                          {member ? (
-                            <p className="section__lede" style={{ marginTop: 6 }}>
-                              Member: {member.full_name || member.email}
+                          </Badge>
+                          {member && (
+                            <p className="text-xs text-[var(--foreground-muted)] mt-2 flex items-center gap-1">
+                              <UserIcon className="h-3 w-3" />
+                              {member.full_name || member.email}
                             </p>
-                          ) : null}
-                        </div>
+                          )}
+                        </Card>
                       );
                     })}
                   </div>
                 </div>
-              ) : null}
-            </div>
-          ))
-        )}
-      </section>
-    </main>
+              )}
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

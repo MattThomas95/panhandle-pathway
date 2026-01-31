@@ -10,6 +10,27 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { useCart } from "@/components/store/CartContext";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import {
+  Calendar,
+  ShoppingBag,
+  ClipboardList,
+  Clock,
+  Users,
+  DollarSign,
+  CheckCircle2,
+  ShoppingCart,
+  AlertTriangle,
+  Info,
+  X,
+  Loader2,
+  LogIn,
+  UserPlus,
+} from "lucide-react";
 
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -266,7 +287,6 @@ export default function BookPage() {
       }
 
       if (svc && slotForCart) {
-        const svcRules = getServiceRules(svc);
         const lateFee = getLateFee(slotForCart.start_time, svc);
         setLastLateFee(lateFee);
         addItem({
@@ -310,7 +330,6 @@ export default function BookPage() {
       setInfoNotice("Select a service and time slot first.");
       return;
     }
-    const svcRules = getServiceRules(selectedServiceData);
     const available = selectedSlot.capacity - selectedSlot.booked_count;
     if (available <= 0) return;
     const lateFee = getLateFee(selectedSlot.start_time, selectedServiceData);
@@ -326,6 +345,7 @@ export default function BookPage() {
       startTime: selectedSlot.start_time,
       endTime: selectedSlot.end_time,
     });
+    const svcRules = getServiceRules(selectedServiceData);
     setCartNotice(
       lateFee > 0
         ? `Booking added to cart with a $${lateFee.toFixed(2)} late fee (within ${svcRules.feeDays} days). Proceed to checkout.`
@@ -368,28 +388,36 @@ export default function BookPage() {
 
   if (loading) {
     return (
-      <main className="page" style={{ textAlign: "center" }}>
-        <p>Loading...</p>
-      </main>
+      <div className="page-container flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--primary)]" />
+      </div>
     );
   }
 
   if (authRequired) {
     return (
-      <main className="page">
-        <div className="card" style={{ textAlign: "center" }}>
-          <h2>Please sign in to book</h2>
-          <p className="section__lede">Sign in to view available services and time slots.</p>
-          <div style={{ marginTop: 12, display: "flex", justifyContent: "center", gap: 10 }}>
-            <Link className="btn-primary" href="/auth/login?redirectedFrom=/book">
-              Sign in
-            </Link>
-            <Link className="btn-ghost" href="/auth/signup?redirectedFrom=/book">
-              Create account
-            </Link>
+      <div className="page-container">
+        <EmptyState
+          icon={Calendar}
+          title="Please sign in to book"
+          description="Sign in to view available services and time slots."
+        >
+          <div className="flex gap-3">
+            <Button variant="primary" asChild>
+              <Link href="/auth/login?redirectedFrom=/book">
+                <LogIn className="h-4 w-4" />
+                Sign in
+              </Link>
+            </Button>
+            <Button variant="secondary" asChild>
+              <Link href="/auth/signup?redirectedFrom=/book">
+                <UserPlus className="h-4 w-4" />
+                Create account
+              </Link>
+            </Button>
           </div>
-        </div>
-      </main>
+        </EmptyState>
+      </div>
     );
   }
 
@@ -397,325 +425,341 @@ export default function BookPage() {
   const selectedAvailability = selectedSlot ? Math.max(0, selectedSlot.capacity - selectedSlot.booked_count) : null;
 
   return (
-    <main className="page">
-      <header className="hero" style={{ marginBottom: 32 }}>
-        <div className="hero__text">
-          <span className="badge badge-blue">Book a consultation</span>
-          <h1>Choose a service and time</h1>
-          <p>Pick a program, then grab an available slot that fits your schedule.</p>
-          <div className="hero__cta">
-            <Link className="btn-gold" href="/store">
-              Browse programs
-            </Link>
-            <Link className="btn-primary" href="/dashboard">
-              View your bookings
-            </Link>
-          </div>
-        </div>
-        <div className="hero__image">
-          <div className="hero__image-placeholder">
-            <span>Calendar preview</span>
-          </div>
-        </div>
-      </header>
+    <div className="page-container">
+      <PageHeader
+        badge="Book a consultation"
+        badgeVariant="blue"
+        title="Choose a service and time"
+        description="Pick a program, then grab an available slot that fits your schedule."
+      >
+        <Button variant="gold" asChild>
+          <Link href="/store">
+            <ShoppingBag className="h-4 w-4" />
+            Browse programs
+          </Link>
+        </Button>
+        <Button variant="secondary" asChild>
+          <Link href="/dashboard">
+            <ClipboardList className="h-4 w-4" />
+            View your bookings
+          </Link>
+        </Button>
+      </PageHeader>
 
+      {/* Notices */}
       {success && (
-        <div className="card" style={{ borderColor: "rgba(16,185,129,0.3)", background: "#f0fdf4" }}>
-          <p style={{ color: "#15803d", fontWeight: 700 }}>Booking confirmed! Redirecting to your dashboard...</p>
-          {lastBookedService ? (
-            <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <Link className="btn-primary" href="/checkout">
-                Pay for booking (${(lastBookedService.price + lastLateFee).toFixed(2)})
-              </Link>
-              <Link className="btn-ghost" href="/dashboard">
-                View bookings
-              </Link>
+        <Card variant="highlight" className="p-4 mb-6 border-[var(--teal-500)]/30">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="h-5 w-5 text-[var(--teal-500)] mt-0.5 shrink-0" />
+            <div>
+              <p className="font-bold text-[var(--teal-600)]">Booking confirmed! Redirecting to checkout...</p>
+              {lastBookedService && (
+                <div className="mt-3 flex gap-2 flex-wrap">
+                  <Button variant="primary" size="sm" asChild>
+                    <Link href="/checkout">Pay for booking (${(lastBookedService.price + lastLateFee).toFixed(2)})</Link>
+                  </Button>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href="/dashboard">View bookings</Link>
+                  </Button>
+                </div>
+              )}
             </div>
-          ) : null}
-        </div>
+          </div>
+        </Card>
       )}
 
       {cartNotice && (
-        <div className="card" style={{ borderColor: "rgba(46,163,217,0.3)", background: "#eef7fb" }}>
-          <p style={{ color: "#1E7FB6", fontWeight: 700 }}>{cartNotice}</p>
-          <div style={{ marginTop: 8, display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <Link className="btn-primary" href="/checkout">
-              Go to checkout
-            </Link>
-            <Link className="btn-ghost" href="/cart">
-              View cart
-            </Link>
+        <Card variant="highlight" className="p-4 mb-6 border-[var(--primary)]/30">
+          <div className="flex items-start gap-3">
+            <ShoppingCart className="h-5 w-5 text-[var(--primary)] mt-0.5 shrink-0" />
+            <div>
+              <p className="font-bold text-[var(--primary)]">{cartNotice}</p>
+              <div className="mt-3 flex gap-2 flex-wrap">
+                <Button variant="primary" size="sm" asChild>
+                  <Link href="/checkout">Go to checkout</Link>
+                </Button>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/cart">View cart</Link>
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
+        </Card>
       )}
 
       {error && (
-        <div className="card" style={{ borderColor: "rgba(248,113,113,0.4)", background: "#fef2f2" }}>
-          <p style={{ color: "#b91c1c", fontWeight: 700 }}>{error}</p>
-        </div>
+        <Card variant="default" className="p-4 mb-6 border-[var(--error)]/30">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-[var(--error)] shrink-0" />
+            <p className="font-bold text-[var(--error)]">{error}</p>
+          </div>
+        </Card>
       )}
 
       {infoNotice && (
-        <div className="card" style={{ borderColor: "rgba(255,196,85,0.4)", background: "#fff7e6" }}>
-          <p style={{ color: "#92400e", fontWeight: 700 }}>{infoNotice}</p>
-        </div>
+        <Card variant="default" className="p-4 mb-6 border-[var(--gold-500)]/30 bg-[var(--gold-50)]">
+          <div className="flex items-center gap-3">
+            <Info className="h-5 w-5 text-[var(--gold-600)] shrink-0" />
+            <p className="font-bold text-[var(--gold-700)]">{infoNotice}</p>
+          </div>
+        </Card>
       )}
 
-      <div className="grid-cards" style={{ alignItems: "start" }}>
-        <div
-          className="card"
-          style={{
-            gridColumn: "span 1",
-            background: "linear-gradient(135deg, rgba(46,163,217,0.08), rgba(242,183,5,0.06))",
-          }}
-        >
-          <h2>Services</h2>
-          <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-            {services.map((service) => (
-              <div
-                key={service.id}
-                onClick={() => {
-                  setSelectedService((prev) => (prev === service.id ? null : service.id));
-                  setSelectedSlot(null);
-                  setCartNotice(null);
-                }}
-                className="card card--bordered"
-                style={{
-                  textAlign: "left",
-                  background:
+      {/* Main grid: services + calendar */}
+      <div className="grid lg:grid-cols-3 gap-6 items-start">
+        {/* Services sidebar */}
+        <div className="space-y-4">
+          <Card variant="highlight" className="p-5">
+            <h2 className="text-base mb-4">Services</h2>
+            <div className="space-y-3">
+              {services.map((service) => (
+                <Card
+                  key={service.id}
+                  variant={selectedService === service.id ? "bordered" : "default"}
+                  className={`p-4 cursor-pointer transition-all ${
                     selectedService === service.id
-                      ? "linear-gradient(135deg, rgba(46,163,217,0.15), rgba(242,183,5,0.12))"
-                      : "linear-gradient(135deg, rgba(46,163,217,0.05), rgba(242,183,5,0.05))",
-                  borderColor: selectedService === service.id ? "var(--blue-primary)" : "rgba(14,47,74,0.12)",
-                  boxShadow: selectedService === service.id ? "0 10px 24px rgba(30,127,182,0.14)" : "0 12px 28px rgba(0,0,0,0.05)",
-                  cursor: "pointer",
-                }}
-                role="button"
-                tabIndex={0}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-                  <div>
-                    <div style={{ fontWeight: 700 }}>{service.name}</div>
-                    <div className="section__lede" style={{ marginTop: 4 }}>
-                      {service.duration} min - ${service.price}
+                      ? "border-[var(--primary)] shadow-[var(--shadow-glow-blue)]"
+                      : "hover:border-[var(--border)]"
+                  }`}
+                  onClick={() => {
+                    setSelectedService((prev) => (prev === service.id ? null : service.id));
+                    setSelectedSlot(null);
+                    setCartNotice(null);
+                  }}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div className="flex justify-between items-start gap-2">
+                    <div>
+                      <p className="font-bold text-[var(--foreground)]">{service.name}</p>
+                      <p className="text-sm text-[var(--foreground-muted)] mt-1 flex items-center gap-2">
+                        <Clock className="h-3.5 w-3.5" /> {service.duration} min
+                        <span className="text-[var(--foreground-muted)]">·</span>
+                        <DollarSign className="h-3.5 w-3.5" /> ${service.price}
+                      </p>
                     </div>
+                    <Badge variant="blue">
+                      <Users className="h-3 w-3" /> {service.capacity}
+                    </Badge>
                   </div>
-                  <span className="badge badge-blue">{service.capacity} seats</span>
-                </div>
-                <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  {timeSlotsMap[service.id] && timeSlotsMap[service.id].length ? (
-                    <span className="section__lede">
-                      {timeSlotsMap[service.id].length} available slot{timeSlotsMap[service.id].length !== 1 ? "s" : ""} - Next:{" "}
-                      {new Date(timeSlotsMap[service.id][0].start_time).toLocaleDateString()}
-                    </span>
-                  ) : (
-                    <span className="section__lede" style={{ color: "#9ca3af" }}>
-                      No available slots
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedService((prev) => (prev === service.id ? null : service.id));
-                      setSelectedSlot(null);
-                      setCartNotice(null);
-                      setInfoNotice(null);
-                    }}
-                    className="btn-gold"
-                    style={{ padding: "8px 12px", boxShadow: "0 10px 20px rgba(240,164,0,0.22)", color: "#1f2a32" }}
-                  >
-                    {selectedService === service.id ? "Show all" : "Select"}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {selectedServiceData && (
-            <div
-              className="card"
-              style={{ marginTop: 16, background: "linear-gradient(135deg, rgba(242,183,5,0.08), #fffdf7)" }}
-            >
-              <h3>{selectedServiceData.name}</h3>
-              <p className="section__lede" style={{ marginTop: 4 }}>
-                {selectedServiceData.description}
-              </p>
-              <div className="feature-list" style={{ marginTop: 10 }}>
-                <li>Duration: {selectedServiceData.duration} minutes</li>
-                <li>Capacity: {selectedServiceData.capacity} person(s)</li>
-                <li style={{ fontWeight: 700 }}>Price: ${selectedServiceData.price}</li>
-              </div>
-              {selectedSlot ? (
-                <div style={{ marginTop: 10 }} className="pill">
-                  Selected: {new Date(selectedSlot.start_time).toLocaleDateString()} at{" "}
-                  {new Date(selectedSlot.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} ·{" "}
-                  {selectedAvailability} spots left
-                </div>
-              ) : (
-                <p className="section__lede" style={{ marginTop: 8 }}>
-                  Choose a time slot to proceed.
-                </p>
-              )}
+                  <div className="mt-3 flex items-center justify-between">
+                    {timeSlotsMap[service.id]?.length ? (
+                      <span className="text-xs text-[var(--foreground-muted)]">
+                        {timeSlotsMap[service.id].length} slot{timeSlotsMap[service.id].length !== 1 ? "s" : ""} · Next:{" "}
+                        {new Date(timeSlotsMap[service.id][0].start_time).toLocaleDateString()}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-[var(--foreground-muted)]">No available slots</span>
+                    )}
+                    <Button
+                      variant={selectedService === service.id ? "primary" : "gold"}
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedService((prev) => (prev === service.id ? null : service.id));
+                        setSelectedSlot(null);
+                        setCartNotice(null);
+                        setInfoNotice(null);
+                      }}
+                    >
+                      {selectedService === service.id ? "Show all" : "Select"}
+                    </Button>
+                  </div>
+                </Card>
+              ))}
             </div>
+          </Card>
+
+          {/* Selected service detail */}
+          {selectedServiceData && (
+            <Card variant="default" className="p-5">
+              <h3 className="text-base mb-2">{selectedServiceData.name}</h3>
+              <p className="text-sm text-[var(--foreground-muted)] mb-3">{selectedServiceData.description}</p>
+              <ul className="space-y-1.5 text-sm">
+                <li className="flex items-center gap-2">
+                  <Clock className="h-3.5 w-3.5 text-[var(--primary)]" />
+                  Duration: {selectedServiceData.duration} minutes
+                </li>
+                <li className="flex items-center gap-2">
+                  <Users className="h-3.5 w-3.5 text-[var(--primary)]" />
+                  Capacity: {selectedServiceData.capacity} person(s)
+                </li>
+                <li className="flex items-center gap-2 font-bold">
+                  <DollarSign className="h-3.5 w-3.5 text-[var(--primary)]" />
+                  Price: ${selectedServiceData.price}
+                </li>
+              </ul>
+              {selectedSlot ? (
+                <Badge variant="success" className="mt-3">
+                  Selected: {new Date(selectedSlot.start_time).toLocaleDateString()} at{" "}
+                  {new Date(selectedSlot.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} · {selectedAvailability} spots left
+                </Badge>
+              ) : (
+                <p className="text-sm text-[var(--foreground-muted)] mt-3">Choose a time slot to proceed.</p>
+              )}
+            </Card>
           )}
         </div>
 
-        <div
-          className="card"
-          style={{
-            gridColumn: "span 2",
-            background: "linear-gradient(135deg, rgba(46,163,217,0.06), rgba(242,183,5,0.05))",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <h2>Available time slots</h2>
-            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <div style={{ width: 12, height: 12, borderRadius: 3, background: "#10b981" }}></div>
-                <span className="section__lede" style={{ fontSize: 13 }}>Available</span>
+        {/* Calendar */}
+        <div className="lg:col-span-2">
+          <Card variant="default" className="p-5">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+              <h2 className="text-base">Available time slots</h2>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-sm bg-[#10b981]" />
+                  <span className="text-xs text-[var(--foreground-muted)]">Available</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-sm bg-[#ef4444]" />
+                  <span className="text-xs text-[var(--foreground-muted)]">Full</span>
+                </div>
+                <Badge variant="blue">Local time</Badge>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <div style={{ width: 12, height: 12, borderRadius: 3, background: "#ef4444" }}></div>
-                <span className="section__lede" style={{ fontSize: 13 }}>Full</span>
-              </div>
-              <span className="badge badge-blue">Local time</span>
             </div>
-          </div>
-          <div
-            style={
-              {
-                "--fc-border-color": "#e5e7eb",
-                "--fc-button-bg-color": "#2FA4D9",
-                "--fc-button-border-color": "#1E7FB6",
-                "--fc-button-hover-bg-color": "#1E7FB6",
-                "--fc-button-hover-border-color": "#1E7FB6",
-                "--fc-button-active-bg-color": "#1E7FB6",
-                "--fc-button-active-border-color": "#1E7FB6",
-                "--fc-today-bg-color": "#fef3c7",
-              } as React.CSSProperties
-            }
-          >
-            <FullCalendar
-              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-              initialView="dayGridMonth"
-              headerToolbar={{
-                left: "prev,next today",
-                center: "title",
-                right: "dayGridMonth,timeGridWeek,timeGridDay",
-              }}
-              events={getCalendarEvents()}
-              eventClick={(info) => {
-                handleSlotClick(info.event.extendedProps as TimeSlot);
-              }}
-              slotMinTime="08:00:00"
-              slotMaxTime="18:00:00"
-              allDaySlot={false}
-              height="auto"
-              eventTimeFormat={{
-                hour: "numeric",
-                minute: "2-digit",
-                meridiem: "short",
-              }}
-              dayMaxEvents={3}
-              moreLinkText="more slots"
-              eventDisplay="block"
-              displayEventTime={false}
-              displayEventEnd={false}
-            />
-          </div>
+            <div
+              style={
+                {
+                  "--fc-border-color": "#e5e7eb",
+                  "--fc-button-bg-color": "var(--primary)",
+                  "--fc-button-border-color": "var(--blue-700)",
+                  "--fc-button-hover-bg-color": "var(--blue-700)",
+                  "--fc-button-hover-border-color": "var(--blue-700)",
+                  "--fc-button-active-bg-color": "var(--blue-700)",
+                  "--fc-button-active-border-color": "var(--blue-700)",
+                  "--fc-today-bg-color": "var(--gold-50)",
+                } as React.CSSProperties
+              }
+            >
+              <FullCalendar
+                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                initialView="dayGridMonth"
+                headerToolbar={{
+                  left: "prev,next today",
+                  center: "title",
+                  right: "dayGridMonth,timeGridWeek,timeGridDay",
+                }}
+                events={getCalendarEvents()}
+                eventClick={(info) => {
+                  handleSlotClick(info.event.extendedProps as TimeSlot);
+                }}
+                slotMinTime="08:00:00"
+                slotMaxTime="18:00:00"
+                allDaySlot={false}
+                height="auto"
+                eventTimeFormat={{
+                  hour: "numeric",
+                  minute: "2-digit",
+                  meridiem: "short",
+                }}
+                dayMaxEvents={3}
+                moreLinkText="more slots"
+                eventDisplay="block"
+                displayEventTime={false}
+                displayEventEnd={false}
+              />
+            </div>
+          </Card>
         </div>
       </div>
 
+      {/* Booking confirmation modal */}
       {selectedSlot && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="card" style={{ maxWidth: 520, width: "100%" }}>
-            <h3>Confirm booking</h3>
-            <div className="feature-list" style={{ marginTop: 12 }}>
-              <li>
-                <strong>Service:</strong> {selectedServiceData?.name}
-              </li>
-              <li>
-                <strong>Date:</strong>{" "}
-                {(() => {
-                  const startDate = new Date(selectedSlot.start_time);
-                  const endDate = new Date(selectedSlot.end_time);
-                  const startDateStr = startDate.toLocaleDateString();
-                  const endDateStr = endDate.toLocaleDateString();
-
-                  if (startDateStr !== endDateStr) {
-                    return `${startDateStr} - ${endDateStr}`;
-                  }
-                  return startDateStr;
-                })()}
-              </li>
-              <li>
-                <strong>Time:</strong> {new Date(selectedSlot.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} -{" "}
-                {new Date(selectedSlot.end_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-              </li>
-              <li>
-                <strong>Availability:</strong> {selectedAvailability} spots left
-              </li>
-              <li>
-                <strong>Price:</strong> ${selectedServiceData?.price}
-              </li>
-              <li>
-                <strong>Late fee:</strong>{" "}
-                {getLateFee(selectedSlot.start_time, selectedServiceData) > 0
-                  ? `$${getLateFee(selectedSlot.start_time, selectedServiceData)}`
-                  : "$0.00"}
-              </li>
-              <li>
-                <strong>Total:</strong>{" "}
-                ${(selectedServiceData?.price + getLateFee(selectedSlot.start_time, selectedServiceData)).toFixed(2)}
-              </li>
+          <Card variant="default" className="max-w-lg w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base">Confirm booking</h3>
+              <button
+                onClick={() => { setSelectedSlot(null); setNotes(""); setError(null); }}
+                className="rounded-lg p-1 hover:bg-[var(--surface)] transition-colors"
+              >
+                <X className="h-5 w-5 text-[var(--foreground-muted)]" />
+              </button>
             </div>
 
-            <div style={{ marginTop: 12 }}>
-              <label className="eyebrow" style={{ display: "block", marginBottom: 6 }}>
-                Notes (optional)
-              </label>
+            <div className="space-y-2 text-sm mb-4">
+              <div className="flex justify-between">
+                <span className="text-[var(--foreground-muted)]">Service</span>
+                <span className="font-bold">{selectedServiceData?.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--foreground-muted)]">Date</span>
+                <span className="font-bold">
+                  {(() => {
+                    const startDate = new Date(selectedSlot.start_time);
+                    const endDate = new Date(selectedSlot.end_time);
+                    if (startDate.toLocaleDateString() !== endDate.toLocaleDateString()) {
+                      return `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`;
+                    }
+                    return startDate.toLocaleDateString();
+                  })()}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--foreground-muted)]">Time</span>
+                <span className="font-bold">
+                  {new Date(selectedSlot.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} -{" "}
+                  {new Date(selectedSlot.end_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--foreground-muted)]">Availability</span>
+                <span className="font-bold">{selectedAvailability} spots left</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--foreground-muted)]">Price</span>
+                <span className="font-bold">${selectedServiceData?.price}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--foreground-muted)]">Late fee</span>
+                <span className="font-bold">
+                  {getLateFee(selectedSlot.start_time, selectedServiceData) > 0
+                    ? `$${getLateFee(selectedSlot.start_time, selectedServiceData)}`
+                    : "$0.00"}
+                </span>
+              </div>
+              <div className="flex justify-between border-t border-[var(--border)] pt-2">
+                <span className="font-bold">Total</span>
+                <span className="font-extrabold text-[var(--blue-900)]">
+                  ${((selectedServiceData?.price ?? 0) + getLateFee(selectedSlot.start_time, selectedServiceData)).toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Notes (optional)</label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
-                style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid rgba(0,0,0,0.12)" }}
+                className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 text-[var(--foreground)] shadow-sm focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 transition-colors"
                 placeholder="Any special requests or information..."
               />
             </div>
 
-            <div style={{ display: "flex", gap: 12, marginTop: 16, flexWrap: "wrap" }}>
-              <button
+            <div className="flex gap-3 flex-wrap">
+              <Button
+                variant="secondary"
+                className="flex-1"
                 onClick={addBookingToCart}
                 disabled={selectedAvailability !== null && selectedAvailability <= 0}
-                className="btn-ghost"
-                style={{ flex: 1 }}
               >
-                Add booking to cart
-              </button>
-              <button
+                <ShoppingCart className="h-4 w-4" />
+                Add to cart
+              </Button>
+              <Button
+                variant="primary"
+                className="flex-1"
                 onClick={handleBooking}
                 disabled={bookingLoading || (selectedAvailability !== null && selectedAvailability <= 0)}
-                className="btn-primary"
-                style={{ flex: 1 }}
               >
                 {bookingLoading ? "Booking..." : "Book now"}
-              </button>
-              <button
-                onClick={() => {
-                  setSelectedSlot(null);
-                  setNotes("");
-                  setError(null);
-                }}
-                className="btn-gold"
-                style={{ flex: 1, background: "#fff", color: "var(--text)", border: "1px solid rgba(0,0,0,0.12)" }}
-              >
-                Cancel
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
-    </main>
+    </div>
   );
 }

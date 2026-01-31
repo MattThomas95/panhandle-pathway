@@ -4,6 +4,10 @@ import { useState } from "react";
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { GraduationCap, ArrowLeft, AlertCircle, CheckCircle2, Mail, Building2 } from "lucide-react";
 
 const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
@@ -49,11 +53,9 @@ export default function SignupPage() {
       return;
     }
 
-    // Check if email confirmation is required
     if (data.user && !data.session) {
       setSuccess(true);
     } else {
-      // Auto-confirmed, redirect to dashboard
       router.push("/dashboard");
     }
 
@@ -62,169 +64,114 @@ export default function SignupPage() {
 
   if (success) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 dark:bg-black">
-        <div className="w-full max-w-md rounded-lg border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20">
-              <svg
-                className="h-6 w-6 text-green-600 dark:text-green-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            </div>
-            <h2 className="text-xl font-bold text-black dark:text-white">
-              Check your email
-            </h2>
-            <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-              We&apos;ve sent a confirmation link to <strong>{email}</strong>. Please
-              click the link to verify your account.
-            </p>
-            <Link
-              href="/auth/login"
-              className="mt-6 inline-block rounded-md bg-black px-4 py-2 text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-            >
-              Back to Sign In
-            </Link>
+      <div className="min-h-screen bg-gradient-to-br from-[var(--blue-50)] to-[var(--background)] flex items-center justify-center p-6">
+        <Card variant="elevated" className="w-full max-w-md p-8 text-center">
+          <div className="rounded-2xl bg-[var(--success-light)] p-4 w-fit mx-auto mb-5">
+            <CheckCircle2 className="h-8 w-8 text-[var(--success)]" />
           </div>
-        </div>
+          <h2 className="mb-2">Check your email</h2>
+          <p className="text-sm text-[var(--foreground-muted)] mb-6">
+            We&apos;ve sent a confirmation link to <strong>{email}</strong>. Please click the link to verify your account.
+          </p>
+          <Button variant="primary" asChild>
+            <Link href="/auth/login">Back to Sign In</Link>
+          </Button>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 dark:bg-black">
-      <div className="w-full max-w-md rounded-lg border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-        <h1 className="mb-6 text-center text-2xl font-bold text-black dark:text-white">
-          Create an Account
-        </h1>
+    <div className="min-h-screen bg-gradient-to-br from-[var(--blue-50)] to-[var(--background)] flex items-center justify-center p-6">
+      <Card variant="elevated" className="w-full max-w-md p-8 text-center">
+        <div className="rounded-2xl bg-gradient-to-br from-[var(--blue-50)] to-[var(--teal-50)] p-4 w-fit mx-auto mb-5">
+          <GraduationCap className="h-8 w-8 text-[var(--primary)]" />
+        </div>
+        <h1 className="text-2xl mb-1">Create an account</h1>
+        <p className="text-sm text-[var(--foreground-muted)] mb-6">
+          Join Panhandle Pathways and start your training journey.
+        </p>
 
-        <form onSubmit={handleSignup} className="space-y-4">
+        <form onSubmit={handleSignup} className="space-y-4 text-left">
           {error && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-[var(--error-light)] border border-[var(--rose-100)] text-sm font-bold text-[var(--error)]">
+              <AlertCircle className="h-4 w-4 shrink-0" />
               {error}
             </div>
           )}
 
-          <div>
-            <label
-              htmlFor="fullName"
-              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-            >
-              Full Name
-            </label>
+          <label className="block">
+            <span className="text-sm font-bold text-[var(--foreground)] mb-1.5 block">Full Name</span>
             <input
-              id="fullName"
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               required
-              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-black shadow-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:focus:border-white dark:focus:ring-white"
+              className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[var(--blue-200)] focus:border-[var(--primary)] transition-all"
               placeholder="John Doe"
             />
-          </div>
+          </label>
 
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-            >
-              Email
-            </label>
+          <label className="block">
+            <span className="text-sm font-bold text-[var(--foreground)] mb-1.5 block">Email</span>
             <input
-              id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-black shadow-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:focus:border-white dark:focus:ring-white"
+              className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[var(--blue-200)] focus:border-[var(--primary)] transition-all"
               placeholder="you@example.com"
             />
-          </div>
+          </label>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-            >
-              Password
-            </label>
+          <label className="block">
+            <span className="text-sm font-bold text-[var(--foreground)] mb-1.5 block">Password</span>
             <input
-              id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-black shadow-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:focus:border-white dark:focus:ring-white"
-              placeholder="••••••••"
+              className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[var(--blue-200)] focus:border-[var(--primary)] transition-all"
+              placeholder="At least 6 characters"
             />
-          </div>
+          </label>
 
-          <div>
-            <label
-              htmlFor="confirmPassword"
-              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-            >
-              Confirm Password
-            </label>
+          <label className="block">
+            <span className="text-sm font-bold text-[var(--foreground)] mb-1.5 block">Confirm Password</span>
             <input
-              id="confirmPassword"
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-black shadow-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:focus:border-white dark:focus:ring-white"
-              placeholder="••••••••"
+              className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[var(--blue-200)] focus:border-[var(--primary)] transition-all"
+              placeholder="Repeat your password"
             />
-          </div>
+          </label>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-black py-2 text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-          >
+          <Button type="submit" disabled={loading} variant="primary" size="lg" className="w-full">
             {loading ? "Creating account..." : "Create Account"}
-          </button>
+          </Button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-5 text-sm text-[var(--foreground-muted)]">
           Already have an account?{" "}
-          <Link
-            href="/auth/login"
-            className="font-medium text-black hover:underline dark:text-white"
-          >
-            Sign in
-          </Link>
+          <Link href="/auth/login" className="font-bold text-[var(--primary)] hover:underline">Sign in</Link>
         </p>
 
-        <div className="mt-4 rounded-md bg-blue-50 p-3 dark:bg-blue-900/20">
-          <p className="text-center text-sm text-blue-600 dark:text-blue-400">
+        <div className="mt-4 rounded-xl bg-[var(--blue-50)] p-3 flex items-center gap-2">
+          <Building2 className="h-4 w-4 text-[var(--primary)] shrink-0" />
+          <p className="text-xs text-[var(--primary)]">
             Want to create an organization?{" "}
-            <Link
-              href="/auth/create-organization"
-              className="font-medium underline hover:no-underline"
-            >
-              Click here
-            </Link>
+            <Link href="/auth/create-organization" className="font-bold underline hover:no-underline">Click here</Link>
           </p>
         </div>
 
-        <div className="mt-6 border-t border-zinc-200 pt-4 dark:border-zinc-700">
-          <Link
-            href="/"
-            className="block text-center text-sm text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white"
-          >
-            ← Back to Home
+        <div className="mt-5 pt-4 border-t border-[var(--border)]">
+          <Link href="/" className="inline-flex items-center gap-1 text-sm font-bold text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors">
+            <ArrowLeft className="h-3.5 w-3.5" /> Back to Home
           </Link>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

@@ -4,6 +4,20 @@ import { useCallback, useEffect, useState } from "react";
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
+import {
+  Building2,
+  Users,
+  Settings,
+  UserPlus,
+  LogOut,
+  Loader2,
+  Trash2,
+  ShieldCheck,
+} from "lucide-react";
 
 const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
@@ -39,21 +53,17 @@ export default function OrgPortalPage() {
       .select("*")
       .eq("organization_id", orgId)
       .order("created_at", { ascending: false });
-
     setMembers(data || []);
   }, []);
 
   const checkAccess = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    
     if (!session) {
       router.push("/auth/login");
       return;
     }
-
     setUser(session.user);
 
-    // Fetch profile with organization
     const { data: profileData } = await supabase
       .from("profiles")
       .select("*, organizations(*)")
@@ -61,14 +71,11 @@ export default function OrgPortalPage() {
       .single();
 
     if (!profileData?.is_org_admin || !profileData?.organization_id) {
-      // Not an org admin, redirect to dashboard
       router.push("/dashboard");
       return;
     }
 
     setOrganization(profileData.organizations);
-
-    // Fetch organization members
     await fetchMembers(profileData.organization_id);
     setLoading(false);
   }, [fetchMembers, router]);
@@ -85,238 +92,152 @@ export default function OrgPortalPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black">
-        <div className="text-zinc-600 dark:text-zinc-400">Loading...</div>
+      <div className="page-container flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--primary)]" />
       </div>
     );
   }
 
+  const tabs = [
+    { key: "members" as const, label: `Members (${members.length})`, icon: Users },
+    { key: "invite" as const, label: "Invite members", icon: UserPlus },
+    { key: "settings" as const, label: "Settings", icon: Settings },
+  ];
+
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black">
-      {/* Header */}
-      <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="text-xl font-bold text-black dark:text-white">
-              Panhandle Pathway
-            </Link>
-            <span className="rounded-md bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-              Organization Portal
-            </span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-zinc-600 dark:text-zinc-400">
-              {organization?.name}
-            </span>
-            <Link
-              href="/dashboard"
-              className="text-sm text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white"
-            >
-              Dashboard
-            </Link>
-            <button
-              onClick={handleSignOut}
-              className="rounded-md bg-black px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-            >
-              Sign Out
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className="page-container">
+      <PageHeader
+        badge="Organization portal"
+        badgeVariant="blue"
+        title={organization?.name || "Organization"}
+        description="Manage your organization members and settings."
+      >
+        <Button variant="secondary" size="sm" asChild>
+          <Link href="/dashboard">Dashboard</Link>
+        </Button>
+        <Button variant="ghost" size="sm" onClick={handleSignOut}>
+          <LogOut className="h-4 w-4" />
+          Sign out
+        </Button>
+      </PageHeader>
 
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Page Title */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-black dark:text-white">
-            {organization?.name}
-          </h1>
-          <p className="mt-1 text-zinc-600 dark:text-zinc-400">
-            Manage your organization members and settings
-          </p>
-        </div>
-
-        {/* Tabs */}
-        <div className="mb-6 border-b border-zinc-200 dark:border-zinc-800">
-          <nav className="-mb-px flex gap-6">
+      {/* Tabs */}
+      <div className="mb-8 border-b border-[var(--border)]">
+        <nav className="-mb-px flex gap-6">
+          {tabs.map((tab) => (
             <button
-              onClick={() => setActiveTab("members")}
-              className={`border-b-2 pb-3 text-sm font-medium transition-colors ${
-                activeTab === "members"
-                  ? "border-black text-black dark:border-white dark:text-white"
-                  : "border-transparent text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white"
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex items-center gap-2 border-b-2 pb-3 text-sm font-bold transition-colors cursor-pointer ${
+                activeTab === tab.key
+                  ? "border-[var(--primary)] text-[var(--primary)]"
+                  : "border-transparent text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
               }`}
             >
-              Members ({members.length})
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
             </button>
-            <button
-              onClick={() => setActiveTab("invite")}
-              className={`border-b-2 pb-3 text-sm font-medium transition-colors ${
-                activeTab === "invite"
-                  ? "border-black text-black dark:border-white dark:text-white"
-                  : "border-transparent text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white"
-              }`}
-            >
-              Invite Members
-            </button>
-            <button
-              onClick={() => setActiveTab("settings")}
-              className={`border-b-2 pb-3 text-sm font-medium transition-colors ${
-                activeTab === "settings"
-                  ? "border-black text-black dark:border-white dark:text-white"
-                  : "border-transparent text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white"
-              }`}
-            >
-              Settings
-            </button>
-          </nav>
-        </div>
-
-        {/* Tab Content */}
-        {activeTab === "members" && (
-          <MembersTab members={members} currentUserId={user?.id} onUpdate={() => fetchMembers(organization!.id)} />
-        )}
-        {activeTab === "invite" && (
-          <InviteTab organizationId={organization!.id} onInvited={() => fetchMembers(organization!.id)} />
-        )}
-        {activeTab === "settings" && (
-          <SettingsTab organization={organization!} onUpdate={setOrganization} />
-        )}
+          ))}
+        </nav>
       </div>
+
+      {activeTab === "members" && (
+        <MembersTab members={members} currentUserId={user?.id} onUpdate={() => fetchMembers(organization!.id)} />
+      )}
+      {activeTab === "invite" && (
+        <InviteTab organizationId={organization!.id} onInvited={() => fetchMembers(organization!.id)} />
+      )}
+      {activeTab === "settings" && (
+        <SettingsTab organization={organization!} onUpdate={setOrganization} />
+      )}
     </div>
   );
 }
 
-// Members Tab Component
-function MembersTab({ 
-  members, 
-  currentUserId, 
-  onUpdate 
-}: { 
-  members: Profile[]; 
+function MembersTab({
+  members,
+  currentUserId,
+  onUpdate,
+}: {
+  members: Profile[];
   currentUserId: string;
   onUpdate: () => void;
 }) {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
   const toggleOrgAdmin = async (memberId: string, currentStatus: boolean) => {
-    if (memberId === currentUserId) return; // Can't change own status
-    
-    const { error } = await supabase
-      .from("profiles")
-      .update({ is_org_admin: !currentStatus })
-      .eq("id", memberId);
-
-    if (!error) {
-      onUpdate();
-    }
+    if (memberId === currentUserId) return;
+    const { error } = await supabase.from("profiles").update({ is_org_admin: !currentStatus }).eq("id", memberId);
+    if (!error) onUpdate();
   };
 
   const removeMember = async (memberId: string) => {
     if (memberId === currentUserId) return;
-    
-    if (!confirm("Are you sure you want to remove this member from the organization?")) {
-      return;
-    }
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({ organization_id: null, is_org_admin: false })
-      .eq("id", memberId);
-
-    if (!error) {
-      onUpdate();
-    }
+    if (!confirm("Are you sure you want to remove this member from the organization?")) return;
+    const { error } = await supabase.from("profiles").update({ organization_id: null, is_org_admin: false }).eq("id", memberId);
+    if (!error) onUpdate();
   };
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-zinc-200 dark:border-zinc-800">
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              Member
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              Role
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              Org Admin
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              Joined
-            </th>
-            <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-          {members.map((member) => (
-            <tr key={member.id}>
-              <td className="whitespace-nowrap px-6 py-4">
-                <div>
-                  <div className="font-medium text-black dark:text-white">
-                    {member.full_name || "—"}
-                  </div>
-                  <div className="text-sm text-zinc-500 dark:text-zinc-400">
-                    {member.email}
-                  </div>
-                </div>
-              </td>
-              <td className="whitespace-nowrap px-6 py-4">
-                <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                  member.role === "admin" 
-                    ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
-                    : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                }`}>
-                  {member.role}
-                </span>
-              </td>
-              <td className="whitespace-nowrap px-6 py-4">
-                <button
-                  onClick={() => toggleOrgAdmin(member.id, member.is_org_admin)}
-                  disabled={member.id === currentUserId}
-                  className={`inline-flex rounded-full px-2 py-1 text-xs font-medium transition-colors ${
-                    member.is_org_admin
-                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                      : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
-                  } ${member.id === currentUserId ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:opacity-80"}`}
-                >
-                  {member.is_org_admin ? "Yes" : "No"}
-                </button>
-              </td>
-              <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400">
-                {new Date(member.created_at).toLocaleDateString()}
-              </td>
-              <td className="whitespace-nowrap px-6 py-4 text-right">
-                {member.id !== currentUserId && (
-                  <button
-                    onClick={() => removeMember(member.id)}
-                    className="text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                  >
-                    Remove
-                  </button>
-                )}
-                {member.id === currentUserId && (
-                  <span className="text-sm text-zinc-400 dark:text-zinc-500">You</span>
-                )}
-              </td>
+    <Card variant="default" className="overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-[var(--border)]">
+              <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-[var(--foreground-muted)]">Member</th>
+              <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-[var(--foreground-muted)]">Role</th>
+              <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-[var(--foreground-muted)]">Org admin</th>
+              <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-[var(--foreground-muted)]">Joined</th>
+              <th className="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-[var(--foreground-muted)]">Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody className="divide-y divide-[var(--border-light)]">
+            {members.map((member) => (
+              <tr key={member.id} className="hover:bg-[var(--surface)] transition-colors">
+                <td className="whitespace-nowrap px-6 py-4">
+                  <div className="font-bold text-[var(--foreground)]">{member.full_name || "—"}</div>
+                  <div className="text-sm text-[var(--foreground-muted)]">{member.email}</div>
+                </td>
+                <td className="whitespace-nowrap px-6 py-4">
+                  <Badge variant={member.role === "admin" ? "blue" : "default"}>{member.role}</Badge>
+                </td>
+                <td className="whitespace-nowrap px-6 py-4">
+                  <button
+                    onClick={() => toggleOrgAdmin(member.id, member.is_org_admin)}
+                    disabled={member.id === currentUserId}
+                    className={`cursor-pointer ${member.id === currentUserId ? "cursor-not-allowed opacity-50" : ""}`}
+                  >
+                    <Badge variant={member.is_org_admin ? "success" : "default"}>
+                      {member.is_org_admin ? "Yes" : "No"}
+                    </Badge>
+                  </button>
+                </td>
+                <td className="whitespace-nowrap px-6 py-4 text-sm text-[var(--foreground-muted)]">
+                  {new Date(member.created_at).toLocaleDateString()}
+                </td>
+                <td className="whitespace-nowrap px-6 py-4 text-right">
+                  {member.id !== currentUserId ? (
+                    <Button variant="ghost" size="sm" onClick={() => removeMember(member.id)} className="text-[var(--error)] hover:text-[var(--error)] hover:bg-[var(--rose-50)]">
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Remove
+                    </Button>
+                  ) : (
+                    <Badge variant="outline">You</Badge>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
   );
 }
 
-// Invite Tab Component
-function InviteTab({ 
-  organizationId, 
-  onInvited 
-}: { 
+function InviteTab({
+  organizationId,
+  onInvited,
+}: {
   organizationId: string;
   onInvited: () => void;
 }) {
@@ -327,61 +248,40 @@ function InviteTab({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+
+  const inputClass =
+    "w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 text-[var(--foreground)] shadow-sm focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 transition-colors";
+  const labelClass = "block text-sm font-bold text-[var(--foreground)] mb-1.5";
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
 
-    // Create new user account
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          full_name: fullName,
-        },
-      },
+      options: { data: { full_name: fullName } },
     });
 
-    if (authError) {
-      setMessage({ type: "error", text: authError.message });
-      setLoading(false);
-      return;
-    }
+    if (authError) { setMessage({ type: "error", text: authError.message }); setLoading(false); return; }
+    if (!authData.user) { setMessage({ type: "error", text: "Failed to create user" }); setLoading(false); return; }
 
-    if (!authData.user) {
-      setMessage({ type: "error", text: "Failed to create user" });
-      setLoading(false);
-      return;
-    }
-
-    // Wait a moment for the trigger to create the profile
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Update the profile with organization
     const { error: updateError } = await supabase
       .from("profiles")
-      .update({ 
-        organization_id: organizationId,
-        full_name: fullName,
-      })
+      .update({ organization_id: organizationId, full_name: fullName })
       .eq("id", authData.user.id);
 
     if (updateError) {
       setMessage({ type: "error", text: `User created but failed to add to org: ${updateError.message}` });
     } else {
       setMessage({ type: "success", text: `Created account for ${email} and added to organization!` });
-      setEmail("");
-      setPassword("");
-      setFullName("");
+      setEmail(""); setPassword(""); setFullName("");
       onInvited();
     }
-
     setLoading(false);
   };
 
@@ -390,30 +290,18 @@ function InviteTab({
     setLoading(true);
     setMessage(null);
 
-    // Check if user exists
-    const { data: existingProfile } = await supabase
-      .from("profiles")
-      .select("id, organization_id")
-      .eq("email", email)
-      .single();
+    const { data: existingProfile } = await supabase.from("profiles").select("id, organization_id").eq("email", email).single();
 
     if (!existingProfile) {
       setMessage({ type: "error", text: "No user found with this email. Try creating a new account instead." });
-      setLoading(false);
-      return;
+      setLoading(false); return;
     }
-
     if (existingProfile.organization_id) {
       setMessage({ type: "error", text: "This user is already part of an organization." });
-      setLoading(false);
-      return;
+      setLoading(false); return;
     }
 
-    // Add user to organization
-    const { error } = await supabase
-      .from("profiles")
-      .update({ organization_id: organizationId })
-      .eq("id", existingProfile.id);
+    const { error } = await supabase.from("profiles").update({ organization_id: organizationId }).eq("id", existingProfile.id);
 
     if (error) {
       setMessage({ type: "error", text: error.message });
@@ -422,41 +310,33 @@ function InviteTab({
       setEmail("");
       onInvited();
     }
-
     setLoading(false);
   };
 
   return (
-    <div className="max-w-lg rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-      {/* Mode Toggle */}
-      <div className="mb-6 flex gap-2">
-        <button
+    <Card variant="default" className="max-w-lg p-6">
+      <div className="flex gap-2 mb-6">
+        <Button
+          variant={mode === "create" ? "primary" : "secondary"}
+          size="sm"
           onClick={() => { setMode("create"); setMessage(null); }}
-          className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-            mode === "create"
-              ? "bg-black text-white dark:bg-white dark:text-black"
-              : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
-          }`}
         >
-          Create New User
-        </button>
-        <button
+          Create new user
+        </Button>
+        <Button
+          variant={mode === "existing" ? "primary" : "secondary"}
+          size="sm"
           onClick={() => { setMode("existing"); setMessage(null); }}
-          className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-            mode === "existing"
-              ? "bg-black text-white dark:bg-white dark:text-black"
-              : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
-          }`}
         >
-          Add Existing User
-        </button>
+          Add existing user
+        </Button>
       </div>
 
       {message && (
-        <div className={`mb-4 rounded-md p-3 text-sm ${
-          message.type === "success" 
-            ? "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400"
-            : "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
+        <div className={`rounded-xl p-3 text-sm font-medium mb-4 ${
+          message.type === "success"
+            ? "bg-[var(--teal-50)] text-[var(--teal-600)]"
+            : "bg-[var(--rose-50)] text-[var(--error)]"
         }`}>
           {message.text}
         </div>
@@ -464,109 +344,53 @@ function InviteTab({
 
       {mode === "create" ? (
         <>
-          <h2 className="text-lg font-semibold text-black dark:text-white">
-            Create New Member Account
-          </h2>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          <h3 className="text-base mb-1">Create new member account</h3>
+          <p className="text-sm text-[var(--foreground-muted)] mb-4">
             Create a new account that will automatically be added to your organization.
           </p>
-
-          <form onSubmit={handleCreateUser} className="mt-4 space-y-4">
+          <form onSubmit={handleCreateUser} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Full Name
-              </label>
-              <input
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-black shadow-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
-                placeholder="John Doe"
-              />
+              <label className={labelClass}>Full name</label>
+              <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} required className={inputClass} placeholder="John Doe" />
             </div>
-
             <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Email Address
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-black shadow-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
-                placeholder="user@example.com"
-              />
+              <label className={labelClass}>Email address</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className={inputClass} placeholder="user@example.com" />
             </div>
-
             <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-black shadow-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
-                placeholder="Minimum 6 characters"
-              />
+              <label className={labelClass}>Password</label>
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className={inputClass} placeholder="Minimum 6 characters" />
             </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="rounded-md bg-black px-4 py-2 text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-            >
-              {loading ? "Creating..." : "Create Account"}
-            </button>
+            <Button type="submit" variant="primary" disabled={loading}>
+              {loading ? "Creating..." : "Create account"}
+            </Button>
           </form>
         </>
       ) : (
         <>
-          <h2 className="text-lg font-semibold text-black dark:text-white">
-            Add Existing User
-          </h2>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          <h3 className="text-base mb-1">Add existing user</h3>
+          <p className="text-sm text-[var(--foreground-muted)] mb-4">
             Add a user who already has an account to your organization.
           </p>
-
-          <form onSubmit={handleAddExisting} className="mt-4 space-y-4">
+          <form onSubmit={handleAddExisting} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Email Address
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-black shadow-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
-                placeholder="user@example.com"
-              />
+              <label className={labelClass}>Email address</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className={inputClass} placeholder="user@example.com" />
             </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="rounded-md bg-black px-4 py-2 text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-            >
-              {loading ? "Adding..." : "Add to Organization"}
-            </button>
+            <Button type="submit" variant="primary" disabled={loading}>
+              {loading ? "Adding..." : "Add to organization"}
+            </Button>
           </form>
         </>
       )}
-    </div>
+    </Card>
   );
 }
 
-// Settings Tab Component
-function SettingsTab({ 
-  organization, 
-  onUpdate 
-}: { 
+function SettingsTab({
+  organization,
+  onUpdate,
+}: {
   organization: Organization;
   onUpdate: (org: Organization) => void;
 }) {
@@ -579,10 +403,11 @@ function SettingsTab({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+
+  const inputClass =
+    "w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 text-[var(--foreground)] shadow-sm focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 transition-colors";
+  const labelClass = "block text-sm font-bold text-[var(--foreground)] mb-1.5";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -607,84 +432,45 @@ function SettingsTab({
       setMessage({ type: "success", text: "Organization settings updated!" });
       onUpdate(data);
     }
-
     setLoading(false);
   };
 
   return (
-    <div className="max-w-lg rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-      <h2 className="text-lg font-semibold text-black dark:text-white">
-        Organization Settings
-      </h2>
+    <Card variant="default" className="max-w-lg p-6">
+      <h3 className="text-base mb-4">Organization settings</h3>
 
-      <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {message && (
-          <div className={`rounded-md p-3 text-sm ${
-            message.type === "success" 
-              ? "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400"
-              : "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
+          <div className={`rounded-xl p-3 text-sm font-medium ${
+            message.type === "success"
+              ? "bg-[var(--teal-50)] text-[var(--teal-600)]"
+              : "bg-[var(--rose-50)] text-[var(--error)]"
           }`}>
             {message.text}
           </div>
         )}
 
         <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Organization Name
-          </label>
-          <input
-            type="text"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            required
-            className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-black shadow-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
-          />
+          <label className={labelClass}>Organization name</label>
+          <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required className={inputClass} />
         </div>
-
         <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Contact Email
-          </label>
-          <input
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-black shadow-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
-          />
+          <label className={labelClass}>Contact email</label>
+          <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className={inputClass} />
         </div>
-
         <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Phone
-          </label>
-          <input
-            type="tel"
-            value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-black shadow-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
-          />
+          <label className={labelClass}>Phone</label>
+          <input type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className={inputClass} />
         </div>
-
         <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Address
-          </label>
-          <textarea
-            value={formData.address}
-            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            rows={3}
-            className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-black shadow-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
-          />
+          <label className={labelClass}>Address</label>
+          <textarea value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} rows={3} className={inputClass} />
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded-md bg-black px-4 py-2 text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-        >
-          {loading ? "Saving..." : "Save Changes"}
-        </button>
+        <Button type="submit" variant="primary" disabled={loading}>
+          {loading ? "Saving..." : "Save changes"}
+        </Button>
       </form>
-    </div>
+    </Card>
   );
 }

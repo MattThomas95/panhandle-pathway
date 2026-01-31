@@ -1,37 +1,60 @@
 import Link from "next/link";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Mail, CheckCircle2, ArrowRight } from "lucide-react";
+
+const whatToInclude = [
+  "Your name and role (teacher, director, org admin)",
+  "Which track: Infant/Toddler, Preschool, Birth-5 CDA, or Director Training",
+  "Any dates you're targeting (first class: Jan 23-25)",
+  "Organization size if registering a team",
+];
 
 export default function ContactPage() {
   return (
-    <main className="page">
-      <header className="section__header" style={{ marginBottom: 20 }}>
-        <p className="eyebrow">Contact</p>
-        <h1>Get in touch</h1>
-        <p className="section__lede">
-          We’re local to the Florida Panhandle and happy to help with CDA and director training questions.
-        </p>
-      </header>
+    <div className="page-container page-container--narrow">
+      <PageHeader
+        badge="Contact"
+        title="Get in touch"
+        description="We're local to the Florida Panhandle and happy to help with CDA and director training questions."
+      />
 
-      <div className="card" style={{ padding: 24, display: "grid", gap: 12 }}>
-        <div>
-          <h3 style={{ margin: "0 0 6px" }}>Email</h3>
-          <p style={{ margin: 0 }}>
-            <Link className="link" href="mailto:info@panhandlepathways.com">
+      <div className="space-y-6">
+        {/* Email card */}
+        <Card variant="highlight" className="p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="rounded-xl bg-[var(--blue-50)] p-2.5">
+              <Mail className="h-5 w-5 text-[var(--primary)]" />
+            </div>
+            <div>
+              <h3 className="text-base">Email us</h3>
+              <p className="text-sm text-[var(--foreground-muted)]">
+                We typically respond within 24 hours
+              </p>
+            </div>
+          </div>
+          <Button variant="primary" asChild>
+            <Link href="mailto:info@panhandlepathways.com">
               info@panhandlepathways.com
-            </Link>{" "}
-            (forwarding active for now)
-          </p>
-        </div>
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
+        </Card>
 
-        <div>
-          <h3 style={{ margin: "0 0 6px" }}>What to include</h3>
-          <ul className="feature-list" style={{ marginTop: 6 }}>
-            <li>Your name and role (teacher, director, org admin)</li>
-            <li>Which track: Infant/Toddler, Preschool, Birth–5 CDA, or Director Training</li>
-            <li>Any dates you’re targeting (first class: Jan 23–25)</li>
-            <li>Organization size if registering a team</li>
+        {/* What to include */}
+        <Card variant="default" className="p-6">
+          <h3 className="text-base mb-4">What to include in your message</h3>
+          <ul className="space-y-3">
+            {whatToInclude.map((item) => (
+              <li key={item} className="flex items-start gap-2.5 text-sm text-[var(--foreground-muted)]">
+                <CheckCircle2 className="h-4 w-4 text-[var(--teal-500)] mt-0.5 shrink-0" />
+                {item}
+              </li>
+            ))}
           </ul>
-        </div>
+        </Card>
       </div>
-    </main>
+    </div>
   );
 }
