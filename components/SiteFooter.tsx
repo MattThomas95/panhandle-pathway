@@ -29,7 +29,7 @@ const footerLinks = [
 
 export function SiteFooter() {
   return (
-    <footer className="bg-[var(--blue-900)] text-white mt-20">
+    <footer className="bg-[var(--blue-900)] text-white mt-20 relative z-10">
       <div className="max-w-[1200px] mx-auto px-6 py-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
           {/* Brand */}

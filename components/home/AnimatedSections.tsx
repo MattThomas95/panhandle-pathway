@@ -27,10 +27,11 @@ import {
   FloatingElement,
 } from "@/components/ui/motion";
 import { FloatingEmojis, SparkleStars } from "@/components/ui/floating-elements";
+import { useSiteSettings } from "@/lib/site-settings";
 
-const stats = [
+const getStats = (cohortDate: string) => [
   { icon: CheckCircle2, label: "Instructor-led", value: "100%" },
-  { icon: Calendar, label: "First cohort", value: "Jan 23-25" },
+  { icon: Calendar, label: "First cohort", value: cohortDate },
   { icon: MapPin, label: "Region", value: "Florida Panhandle" },
   { icon: Users, label: "Class size", value: "Small groups" },
 ];
@@ -105,6 +106,8 @@ const reasons = [
 ];
 
 export function AnimatedHero() {
+  const { settings } = useSiteSettings();
+  
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-[var(--blue-900)] via-[var(--blue-800)] to-[var(--blue-700)]">
       {/* 🌴 Tropical floating emojis in hero */}
@@ -179,12 +182,13 @@ export function AnimatedHero() {
             <motion.div variants={fadeInUp}>
               <Badge variant="gold" className="mb-5 animate-pulse-ring">
                 <Sparkles className="h-3 w-3 mr-1" />
-                Now enrolling for January 2025
+                {settings.enrollment_status}
               </Badge>
             </motion.div>
             <motion.h1
               variants={fadeInUp}
-              className="text-white text-4xl md:text-5xl leading-tight mb-5"
+              className="text-4xl md:text-5xl leading-tight mb-5"
+              style={{ color: '#d4f1f9' }}
             >
               Childcare training built for{" "}
               <motion.span
@@ -234,7 +238,7 @@ export function AnimatedHero() {
               </motion.div>
             </motion.div>
             <motion.div variants={fadeInUp} className="flex flex-wrap gap-3">
-              {["Instructor-led only", "Local & supported", "First class: Jan 23-25"].map((pill, i) => (
+              {["Instructor-led only", "Local & supported", settings.first_class_pill].map((pill, i) => (
                 <motion.span
                   key={pill}
                   initial={{ opacity: 0, scale: 0.8 }}
@@ -268,7 +272,7 @@ export function AnimatedHero() {
                       <h3 className="text-white text-lg">Instructor-led weekends</h3>
                     </div>
                     <FloatingElement>
-                      <Badge variant="gold">Jan 23-25</Badge>
+                      <Badge variant="gold">{settings.cohort_date_short}</Badge>
                     </FloatingElement>
                   </div>
                 </div>
@@ -296,7 +300,7 @@ export function AnimatedHero() {
                 <CardFooter className="p-5 pt-0 flex items-center justify-between">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-widest text-[var(--foreground-subtle)]">Next up</p>
-                    <p className="text-sm font-bold text-[var(--foreground)]">Reserve your spot for Jan 23-25</p>
+                    <p className="text-sm font-bold text-[var(--foreground)]">{settings.reserve_spot_text}</p>
                   </div>
                   <motion.div
                     whileHover={{ scale: 1.08 }}
@@ -318,6 +322,9 @@ export function AnimatedHero() {
 }
 
 export function AnimatedStatBar() {
+  const { settings } = useSiteSettings();
+  const stats = getStats(settings.cohort_date_short);
+  
   return (
     <motion.section
       initial="hidden"
@@ -564,6 +571,8 @@ export function AnimatedWhyUs() {
 }
 
 export function AnimatedCTA() {
+  const { settings } = useSiteSettings();
+  
   return (
     <motion.section
       initial={{ opacity: 0, y: 40 }}
@@ -613,7 +622,7 @@ export function AnimatedCTA() {
           transition={{ delay: 0.1 }}
           className="text-white text-3xl md:text-4xl mb-3"
         >
-          Reserve Jan 23-25 and train with us
+          {settings.cta_heading}
         </motion.h2>
         <motion.p
           initial={{ opacity: 0, y: 20 }}

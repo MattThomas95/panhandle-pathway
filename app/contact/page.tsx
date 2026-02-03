@@ -1,17 +1,22 @@
+"use client";
+
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Mail, CheckCircle2, ArrowRight } from "lucide-react";
-
-const whatToInclude = [
-  "Your name and role (teacher, director, org admin)",
-  "Which track: Infant/Toddler, Preschool, Birth-5 CDA, or Director Training",
-  "Any dates you're targeting (first class: Jan 23-25)",
-  "Organization size if registering a team",
-];
+import { useSiteSettings } from "@/lib/site-settings";
 
 export default function ContactPage() {
+  const { settings } = useSiteSettings();
+  
+  const whatToInclude = [
+    "Your name and role (teacher, director, org admin)",
+    "Which track: Infant/Toddler, Preschool, Birth-5 CDA, or Director Training",
+    `Any dates you're targeting (${settings.first_class_pill})`,
+    "Organization size if registering a team",
+  ];
+
   return (
     <div className="page-container page-container--narrow">
       <div className="flex justify-center mb-6">

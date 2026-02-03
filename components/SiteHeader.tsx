@@ -17,7 +17,6 @@ import {
   Mail,
   ShoppingCart,
   User,
-  Settings,
   Globe,
   Menu,
   X,
@@ -149,8 +148,8 @@ export function SiteHeader() {
             </div>
           </Link>
 
-          {/* Desktop nav */}
-          <nav className="hidden xl:flex items-center gap-1" aria-label="Primary">
+          {/* Desktop nav - centered */}
+          <nav className="hidden xl:flex flex-1 items-center justify-center gap-2" aria-label="Primary">
             {primaryNavLinks.map((link) => {
               const active = pathname === link.href || pathname.startsWith(link.href + "/");
               if (link.accent) {
@@ -167,13 +166,13 @@ export function SiteHeader() {
                 <Link
                   key={link.label}
                   href={link.href}
-                  className={`flex items-center gap-1 px-2.5 py-2 rounded-lg text-sm font-bold transition-all duration-150 ${
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-all duration-150 ${
                     active
                       ? "bg-[var(--blue-50)] text-[var(--primary)]"
                       : "text-[var(--foreground)] hover:bg-[var(--blue-50)] hover:text-[var(--primary)]"
                   }`}
                 >
-                  <link.icon className="h-4 w-4" />
+                  <link.icon className="h-4 w-4 shrink-0" />
                   {link.label}
                 </Link>
               );
@@ -208,19 +207,12 @@ export function SiteHeader() {
 
             {authReady ? (
               userEmail ? (
-                <div className="flex items-center gap-1.5">
-                  {userRole === "admin" && (
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href="/admin"><Settings className="h-4 w-4" /></Link>
-                    </Button>
-                  )}
-                  <Button variant="secondary" size="sm" asChild>
-                    <Link href="/dashboard">
-                      <User className="h-4 w-4" />
-                      <span className="hidden sm:inline">Account</span>
-                    </Link>
-                  </Button>
-                </div>
+                <Button variant="secondary" size="sm" asChild>
+                  <Link href="/dashboard">
+                    <User className="h-4 w-4" />
+                    <span className="hidden sm:inline">Account</span>
+                  </Link>
+                </Button>
               ) : (
                 <Button variant="secondary" size="sm" asChild>
                   <Link href="/auth/login">Sign in</Link>

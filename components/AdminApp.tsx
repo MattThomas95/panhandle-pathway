@@ -29,6 +29,8 @@ import { OrderShow } from "./admin/OrderShow";
 import { BundleList } from "./admin/BundleList";
 import { BundleCreate } from "./admin/BundleCreate";
 import { BundleEdit } from "./admin/BundleEdit";
+import { SiteSettingsList } from "./admin/SiteSettingsList";
+import { SiteSettingsEdit } from "./admin/SiteSettingsEdit";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
@@ -95,6 +97,54 @@ const createDataProvider = (client: any) => {
       const filters = params.filter || {};
 
       console.log(`getList ${resource}:`, { from, to, field, order, filters });
+
+      // Special handling for site_settings - simple fetch
+      if (resource === "site_settings") {
+        try {
+          // Build query
+          let query = client
+            .from(resource)
+            .select('*');
+
+          // Apply filters for site_settings
+          Object.entries(filters).forEach(([key, value]) => {
+            if (value === undefined || value === null || value === "") return;
+            if (typeof value === "string") {
+              query = query.ilike(key, `%${value}%`);
+            } else {
+              query = query.eq(key, value);
+            }
+          });
+
+          // Order by category then key
+          query = query.order('category', { ascending: true }).order('key', { ascending: true });
+
+          // Get total count first
+          const countResult = await client
+            .from(resource)
+            .select('id', { count: 'exact', head: true });
+
+          const totalCount = countResult.count || 0;
+
+          // Get paginated data
+          const { data, error } = await query.range(from, to);
+
+          if (error) {
+            console.error(`getList ${resource} error:`, error);
+            throw error;
+          }
+
+          console.log(`getList ${resource} success:`, { totalCount, dataLength: data?.length });
+
+          return {
+            data: data || [],
+            total: totalCount,
+          };
+        } catch (err) {
+          console.error(`getList ${resource} exception:`, err);
+          throw err;
+        }
+      }
 
       // Special handling for bundles - fetch with services
       if (resource === "bundles") {
@@ -177,6 +227,22 @@ const createDataProvider = (client: any) => {
     },
 
     getOne: async (resource: string, params: any) => {
+      // Special handling for site_settings - use key instead of id
+      if (resource === "site_settings") {
+        const { data, error } = await client
+          .from(resource)
+          .select('*')
+          .eq('id', params.id)
+          .single();
+
+        if (error) {
+          console.error(`Failed to fetch ${resource}:`, error);
+          throw error;
+        }
+
+        return { data };
+      }
+
       // Special handling for bundles - fetch with services
       if (resource === "bundles") {
         const { data: bundle, error } = await client
@@ -275,62 +341,27 @@ const createDataProvider = (client: any) => {
       if (resource === "bundles") {
         const { service_ids, ...bundleData } = params.data;
 
-        // Check user's profile role
-        const { data: profile, error: profileError } = await client
-          .from('profiles')
-          .select('id, role')
-          .eq('id', user.id)
-          .single();
-
-        if (profileError || !profile) {
-          throw new Error('User profile not found. Please ensure your account has a profile.');
-        }
-
-        if (profile.role !== 'admin') {
-          throw new Error(`Insufficient permissions. Your role is '${profile.role}' but 'admin' is required.`);
-        }
-
         // Validate
         if (!bundleData.name || bundleData.custom_price === undefined || !service_ids || service_ids.length < 2) {
           throw new Error('name, custom_price, and at least 2 service_ids are required');
         }
 
-        const insertData = {
-          name: bundleData.name,
-          description: bundleData.description || null,
-          custom_price: bundleData.custom_price,
-          late_fee_days: bundleData.late_fee_days || 0,
-          late_fee_amount: bundleData.late_fee_amount || 0,
-          is_active: bundleData.is_active !== false,
-        };
-
-        // Create bundle
+        // Create bundle using SECURITY DEFINER function
+        // This validates admin role and creates bundle + bundle_services atomically
         const { data: bundle, error: bundleError } = await client
-          .from('bundles')
-          .insert(insertData)
-          .select()
-          .single();
+          .rpc('admin_create_bundle', {
+            p_name: bundleData.name,
+            p_description: bundleData.description || null,
+            p_custom_price: bundleData.custom_price,
+            p_late_fee_days: bundleData.late_fee_days || 0,
+            p_late_fee_amount: bundleData.late_fee_amount || 0,
+            p_is_active: bundleData.is_active !== false,
+            p_service_ids: service_ids
+          });
 
         if (bundleError) {
-          console.error('Error creating bundle:', bundleError.message);
+          console.error('Error creating bundle:', bundleError);
           throw new Error(bundleError.message || 'Failed to create bundle');
-        }
-
-        // Create bundle_services entries
-        const bundleServices = service_ids.map((service_id: string) => ({
-          bundle_id: bundle.id,
-          service_id,
-        }));
-
-        const { error: servicesError } = await client
-          .from('bundle_services')
-          .insert(bundleServices);
-
-        if (servicesError) {
-          console.error('Error creating bundle services:', servicesError);
-          // Rollback: delete the bundle
-          await client.from('bundles').delete().eq('id', bundle.id);
-          throw new Error('Failed to associate services with bundle');
         }
 
         // Fetch services for the created bundle
@@ -471,67 +502,43 @@ const createDataProvider = (client: any) => {
       if (resource === "bundles") {
         const { service_ids, services, ...bundleData } = params.data;
 
-        // Update bundle
+        // Validate
+        if (!service_ids || !Array.isArray(service_ids) || service_ids.length < 2) {
+          throw new Error('Bundle must have at least 2 services');
+        }
+
+        // Update bundle using SECURITY DEFINER function
+        // This validates admin role and updates bundle + bundle_services atomically
         const { data: bundle, error: bundleError } = await client
-          .from('bundles')
-          .update({
-            name: bundleData.name,
-            description: bundleData.description || null,
-            custom_price: bundleData.custom_price,
-            late_fee_days: bundleData.late_fee_days || 0,
-            late_fee_amount: bundleData.late_fee_amount || 0,
-            is_active: bundleData.is_active !== false,
-          })
-          .eq('id', params.id)
-          .select()
-          .single();
+          .rpc('admin_update_bundle', {
+            p_bundle_id: params.id,
+            p_name: bundleData.name,
+            p_description: bundleData.description || null,
+            p_custom_price: bundleData.custom_price,
+            p_late_fee_days: bundleData.late_fee_days || 0,
+            p_late_fee_amount: bundleData.late_fee_amount || 0,
+            p_is_active: bundleData.is_active !== false,
+            p_service_ids: service_ids
+          });
 
         if (bundleError) {
           console.error('Error updating bundle:', bundleError);
-          throw bundleError;
+          throw new Error(bundleError.message || 'Failed to update bundle');
         }
 
-        // If service_ids provided, update bundle_services
-        if (service_ids && Array.isArray(service_ids)) {
-          // Delete existing bundle_services
-          await client
-            .from('bundle_services')
-            .delete()
-            .eq('bundle_id', params.id);
+        // Fetch updated services
+        const { data: updatedServices } = await client
+          .from('services')
+          .select('id, name, price')
+          .in('id', service_ids);
 
-          // Create new bundle_services entries
-          if (service_ids.length >= 2) {
-            const bundleServices = service_ids.map((service_id: string) => ({
-              bundle_id: params.id,
-              service_id,
-            }));
-
-            const { error: servicesError } = await client
-              .from('bundle_services')
-              .insert(bundleServices);
-
-            if (servicesError) {
-              console.error('Error updating bundle services:', servicesError);
-              throw new Error('Failed to update services for bundle');
-            }
-          }
-
-          // Fetch updated services
-          const { data: updatedServices } = await client
-            .from('services')
-            .select('id, name, price')
-            .in('id', service_ids);
-
-          return {
-            data: {
-              ...bundle,
-              services: updatedServices || [],
-              service_ids,
-            },
-          };
-        }
-
-        return { data: bundle };
+        return {
+          data: {
+            ...bundle,
+            services: updatedServices || [],
+            service_ids,
+          },
+        };
       }
 
       const { data, error } = await client
@@ -557,16 +564,16 @@ const createDataProvider = (client: any) => {
     },
 
     delete: async (resource: string, params: any) => {
-      // Special handling for bundles - delete will cascade to bundle_services
+      // Special handling for bundles - use SECURITY DEFINER function
       if (resource === "bundles") {
-        const { error } = await client
-          .from('bundles')
-          .delete()
-          .eq('id', params.id);
+        const { data, error } = await client
+          .rpc('admin_delete_bundle', {
+            p_bundle_id: params.id
+          });
 
         if (error) {
           console.error('Failed to delete bundle:', error);
-          throw error;
+          throw new Error(error.message || 'Failed to delete bundle');
         }
 
         return { data: { id: params.id } };
@@ -773,6 +780,12 @@ export default function AdminApp() {
       />
       <Resource
         name="order_items"
+      />
+      <Resource
+        name="site_settings"
+        list={SiteSettingsList}
+        edit={SiteSettingsEdit}
+        options={{ label: "Advertised Times" }}
       />
     </Admin>
   );

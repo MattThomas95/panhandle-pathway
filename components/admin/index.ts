@@ -13,6 +13,8 @@ export { ProfileList } from "./ProfileList";
 export { ServiceCreate } from "./ServiceCreate";
 export { ServiceEdit } from "./ServiceEdit";
 export { ServiceList } from "./ServiceList";
+export { SiteSettingsList } from "./SiteSettingsList";
+export { SiteSettingsEdit } from "./SiteSettingsEdit";
 export { TimeSlotCreate } from "./TimeSlotCreate";
 export { TimeSlotEdit } from "./TimeSlotEdit";
 export { TimeSlotList } from "./TimeSlotList";

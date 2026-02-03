@@ -22,6 +22,7 @@ import {
   ArrowRight,
   AlertTriangle,
 } from "lucide-react";
+import { FloatingEmojis, SparkleStars, GradientOrbs } from "@/components/ui/floating-elements";
 
 type Booking = {
   id: string;
@@ -237,34 +238,46 @@ export default function DashboardPage() {
   }
 
   const headerActions = (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div className="flex items-center gap-3 flex-wrap">
       {profile?.role === "admin" && (
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/admin"><ShieldCheck className="h-4 w-4" /> Admin</Link>
+        <Button variant="primary" size="sm" asChild>
+          <Link href="/admin"><ShieldCheck className="h-4 w-4" /> Admin Panel</Link>
         </Button>
       )}
       {profile?.is_org_admin && (
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/org"><Building2 className="h-4 w-4" /> Org portal</Link>
+        <Button variant="primary" size="sm" className="bg-[var(--teal-500)] hover:bg-[var(--teal-600)]" asChild>
+          <Link href="/org"><Building2 className="h-4 w-4" /> Org Portal</Link>
         </Button>
       )}
-      <Button variant="secondary" size="sm" onClick={handleSignOut}>
+      <Button variant="ghost" size="sm" onClick={handleSignOut}>
         <LogOut className="h-4 w-4" /> Sign out
       </Button>
     </div>
   );
 
   return (
-    <div className="section-container py-12 space-y-10">
-      <PageHeader
-        badge="Account"
-        title={`Hi, ${profile?.full_name || user?.email}`}
-        subtitle="Manage your bookings, profile, and settings."
-        actions={headerActions}
-      />
+    <>
+      {/* Floating decorations - dashboard page */}
+      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+        <GradientOrbs />
+        <SparkleStars count={35} color="rgba(255, 204, 0, 0.6)" />
+        <FloatingEmojis
+          emojis={["🌴", "☀️", "🌊", "🎓", "📚", "✨", "🐚", "🌺", "⭐", "🦋", "🌈", "💛"]}
+          count={12}
+        />
+      </div>
 
-      {/* Quick cards */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="max-w-5xl mx-auto px-6 py-12 space-y-10">
+        <PageHeader
+          badge="Account"
+          title={`Hi, ${profile?.full_name || user?.email}`}
+          description="Manage your bookings, profile, and settings."
+        >
+          {headerActions}
+        </PageHeader>
+
+        {/* Quick cards */}
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {/* Profile */}
         <Card>
           <CardHeader>
@@ -512,6 +525,7 @@ export default function DashboardPage() {
           </Card>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
