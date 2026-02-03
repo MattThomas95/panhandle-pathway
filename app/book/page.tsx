@@ -604,6 +604,14 @@ export default function BookPage() {
         {/* Calendar */}
         <div className="lg:col-span-2">
           <Card variant="default" className="p-5">
+            <div className="flex items-center justify-center mb-6">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/panhandle-logo-enhanced-final.png"
+                alt="Panhandle Pathways"
+                className="h-16 w-auto object-contain"
+              />
+            </div>
             <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
               <h2 className="text-base">Available time slots</h2>
               <div className="flex items-center gap-4">

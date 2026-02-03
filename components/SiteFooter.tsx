@@ -6,7 +6,7 @@ const footerLinks = [
     title: "Programs",
     links: [
       { label: "All Trainings", href: "/trainings", icon: BookOpen },
-      { label: "CDA Training", href: "/cda", icon: GraduationCap },
+      { label: "National CDA", href: "/cda", icon: GraduationCap },
       { label: "Make & Take", href: "/make-and-take", icon: Scissors },
     ],
   },
@@ -34,6 +34,14 @@ export function SiteFooter() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
           {/* Brand */}
           <div>
+            <div className="mb-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/panhandle-logo-enhanced-final.png"
+                alt="Panhandle Pathways"
+                className="h-14 w-auto object-contain"
+              />
+            </div>
             <h4 className="text-white font-bold text-lg mb-3">Panhandle Pathways</h4>
             <p className="text-sm text-white/60 leading-relaxed">
               Instructor-led CDA and director training for Florida&apos;s childcare educators. Local. Supported. Effective.

@@ -16,6 +16,14 @@ const included = [
 export default function MakeAndTakePage() {
   return (
     <div className="page-container">
+      <div className="flex justify-center mb-6">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/panhandle-logo-enhanced-final.png"
+          alt="Panhandle Pathways"
+          className="h-20 w-auto object-contain"
+        />
+      </div>
       <PageHeader
         badge="Make & Take"
         badgeVariant="gold"

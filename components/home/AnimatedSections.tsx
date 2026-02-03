@@ -38,13 +38,13 @@ const stats = [
 const programs = [
   {
     icon: GraduationCap,
-    title: "National CDA Training",
+    title: "National CDA",
     description:
-      "Infant/Toddler, Preschool, and Birth-5 CDA tracks with live instructor-led weekends and guided online support.",
+      "Instructor-Led, Teacher-Centered CDA training. Infant/Toddler, Preschool, and Birth-5 tracks with live weekend sessions.",
     features: [
       "Live weekend sessions (Fri-Sun)",
-      "Practicum guidance & portfolio support",
-      "Always instructor-supported",
+      "Portfolio development & practicum guidance",
+      "Committed to YOUR success",
     ],
     badge: "Most Popular",
     badgeVariant: "gold" as const,
@@ -168,6 +168,14 @@ export function AnimatedHero() {
             animate="visible"
             variants={staggerContainer}
           >
+            <motion.div variants={fadeInUp} className="mb-6">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/panhandle-logo-enhanced-final.png"
+                alt="Panhandle Pathways"
+                className="h-20 w-auto object-contain"
+              />
+            </motion.div>
             <motion.div variants={fadeInUp}>
               <Badge variant="gold" className="mb-5 animate-pulse-ring">
                 <Sparkles className="h-3 w-3 mr-1" />

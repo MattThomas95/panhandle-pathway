@@ -57,6 +57,14 @@ export default function TrainingsPage() {
     <div className="page-container">
       {/* Hero Section */}
       <section className="text-center mb-12">
+        <div className="flex justify-center mb-6">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/panhandle-logo-enhanced-final.png"
+            alt="Panhandle Pathways"
+            className="h-24 w-auto object-contain"
+          />
+        </div>
         <Badge variant="blue" className="mb-4">Professional Teacher Development</Badge>
         <h1 className="text-4xl md:text-5xl font-extrabold mb-6">
           <span className="text-[var(--foreground)]">Re</span>
@@ -182,7 +190,7 @@ export default function TrainingsPage() {
                 <GraduationCap className="h-5 w-5 text-[var(--gold-500)]" />
               </div>
               <div>
-                <Badge variant="gold" className="mb-2">CDA Credential</Badge>
+                <Badge variant="gold" className="mb-2">National CDA</Badge>
                 <h4 className="mb-2">Child Development Associate</h4>
                 <p className="text-sm text-[var(--foreground-muted)] mb-4">
                   Prepare for your CDA credential with our comprehensive training program

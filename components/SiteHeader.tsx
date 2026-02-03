@@ -25,7 +25,7 @@ import {
 
 const primaryNavLinks = [
   { label: "Trainings", href: "/trainings", icon: BookOpen },
-  { label: "CDA Training", href: "/cda", icon: GraduationCap },
+  { label: "National CDA", href: "/cda", icon: GraduationCap },
   { label: "Make & Take", href: "/make-and-take", icon: Scissors },
   { label: "Why Us", href: "/why-choose-us", icon: Star },
   { label: "Store", href: "/store", icon: ShoppingBag },
@@ -107,7 +107,7 @@ export function SiteHeader() {
             <Link href="/" className="flex items-center gap-3 font-extrabold text-[var(--blue-900)]">
               <div className="w-10 h-10 rounded-lg overflow-hidden bg-white shadow-sm flex items-center justify-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/panhandle-logo.png" alt="" className="w-full h-full object-contain" />
+                <img src="/panhandle-logo-enhanced-final.png" alt="" className="w-full h-full object-contain" />
               </div>
               <span className="text-sm">Admin Panel</span>
             </Link>
@@ -137,7 +137,7 @@ export function SiteHeader() {
           <Link href="/" className="flex items-center gap-3 shrink-0">
             <div className="w-12 h-12 rounded-xl overflow-hidden bg-white shadow-[var(--shadow-sm)] flex items-center justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/panhandle-logo.png" alt="Panhandle Pathways" className="w-full h-full object-contain" />
+              <img src="/panhandle-logo-enhanced-final.png" alt="Panhandle Pathways" className="w-full h-full object-contain" />
             </div>
             <div className="hidden sm:block">
               <span className="font-extrabold text-[var(--blue-900)] text-sm leading-tight block">
@@ -150,7 +150,7 @@ export function SiteHeader() {
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden lg:flex items-center gap-3" aria-label="Primary">
+          <nav className="hidden xl:flex items-center gap-1" aria-label="Primary">
             {primaryNavLinks.map((link) => {
               const active = pathname === link.href || pathname.startsWith(link.href + "/");
               if (link.accent) {
@@ -167,7 +167,7 @@ export function SiteHeader() {
                 <Link
                   key={link.label}
                   href={link.href}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold transition-all duration-150 ${
+                  className={`flex items-center gap-1 px-2.5 py-2 rounded-lg text-sm font-bold transition-all duration-150 ${
                     active
                       ? "bg-[var(--blue-50)] text-[var(--primary)]"
                       : "text-[var(--foreground)] hover:bg-[var(--blue-50)] hover:text-[var(--primary)]"
@@ -233,7 +233,7 @@ export function SiteHeader() {
             {/* Mobile toggle */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="lg:hidden p-2 rounded-lg hover:bg-[var(--blue-50)] transition-colors cursor-pointer"
+              className="xl:hidden p-2 rounded-lg hover:bg-[var(--blue-50)] transition-colors cursor-pointer"
               aria-label="Toggle menu"
             >
               {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -243,7 +243,7 @@ export function SiteHeader() {
 
         {/* Mobile nav */}
         {mobileOpen && (
-          <div className="lg:hidden border-t border-[var(--border)] bg-white animate-fade-in">
+          <div className="xl:hidden border-t border-[var(--border)] bg-white animate-fade-in">
             <nav className="max-w-[1200px] mx-auto p-4 space-y-1">
               {primaryNavLinks.map((link) => {
                 const active = pathname === link.href;

@@ -14,6 +14,14 @@ const whatToInclude = [
 export default function ContactPage() {
   return (
     <div className="page-container page-container--narrow">
+      <div className="flex justify-center mb-6">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/panhandle-logo-enhanced-final.png"
+          alt="Panhandle Pathways"
+          className="h-20 w-auto object-contain"
+        />
+      </div>
       <PageHeader
         badge="Contact"
         title="Get in touch"
