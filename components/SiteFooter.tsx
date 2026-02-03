@@ -5,10 +5,9 @@ const footerLinks = [
   {
     title: "Programs",
     links: [
+      { label: "All Trainings", href: "/trainings", icon: BookOpen },
       { label: "CDA Training", href: "/cda", icon: GraduationCap },
-      { label: "Director Training", href: "/director-training", icon: BookOpen },
       { label: "Make & Take", href: "/make-and-take", icon: Scissors },
-      { label: "All Trainings", href: "/trainings" },
     ],
   },
   {

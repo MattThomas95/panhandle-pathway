@@ -53,17 +53,17 @@ const programs = [
   },
   {
     icon: BookOpen,
-    title: "Director Certification",
+    title: "Professional Development",
     description:
-      "Operations, compliance, staffing, and growth training tailored specifically to Florida Panhandle childcare centers.",
+      "Back-to-the-Basics training with symposiums, seminars, and hands-on sessions that meet CDA, Florida, and Head Start standards.",
     features: [
-      "Focused live cohort sessions",
-      "Compliance checklists & playbooks",
-      "Designed for center operators",
+      "Diverse instructional formats",
+      "Standards-aligned curriculum",
+      "Research-based strategies",
     ],
     badge: "Professional",
     badgeVariant: "blue" as const,
-    href: "/director-training",
+    href: "/trainings",
     color: "teal",
   },
   {

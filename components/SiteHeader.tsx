@@ -24,8 +24,8 @@ import {
 } from "lucide-react";
 
 const primaryNavLinks = [
+  { label: "Trainings", href: "/trainings", icon: BookOpen },
   { label: "CDA Training", href: "/cda", icon: GraduationCap },
-  { label: "Director Training", href: "/director-training", icon: BookOpen },
   { label: "Make & Take", href: "/make-and-take", icon: Scissors },
   { label: "Why Us", href: "/why-choose-us", icon: Star },
   { label: "Store", href: "/store", icon: ShoppingBag },
